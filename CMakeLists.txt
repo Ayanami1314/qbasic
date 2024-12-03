@@ -22,7 +22,9 @@ find_package(fmt CONFIG REQUIRED)
 add_executable(qbasic main.cpp
         tokenizer.h
         tokenizer.cpp
-        util.h)
+        util.h
+        parser.cpp
+        parser.h)
 target_link_libraries(qbasic
         Qt::Core
         Qt::Gui

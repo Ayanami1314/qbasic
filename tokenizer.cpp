@@ -20,6 +20,7 @@ const std::map<TokenType, std::regex> basic_language_regex_table = {
         {TokenType::OP_GT, std::regex(R"(>)")},
         {TokenType::OP_LT, std::regex(R"(<)")},
         {TokenType::OP_EQ, std::regex(R"(==)")},
+        {TokenType::OP_NE, std::regex(R"(\!=)")},
         {TokenType::OP_POW, std::regex(R"(\*\*)")},
         {TokenType::OP_ADD, std::regex(R"(\+)")},
         {TokenType::OP_SUB, std::regex(R"(-)")},
@@ -44,27 +45,10 @@ const std::map<TokenType, std::regex> basic_language_regex_table = {
         {TokenType::SPACE, std::regex(R"(\s+)")},
 };
 Tokenizer::Tokenizer() :regex_table(basic_language_regex_table){
-
+    line_offset = 0;
+    inline_offset = 0;
 }
 
-
-// op := '+' | '-' | '*' | '/' | mod | '**' // 没有一元
-// num := (+-)?\d+
-// var := str
-// exp := num | var
-// exp := '('+exp+')'
-// exp := exp op exp
-
-// assign_st := LET var '=' exp
-// goto_st := GOTO num
-// end_st := END
-// print_st := PRINT exp
-// input_st := INPUT var
-// if_st := IF exp1 op exp2 THEN num
-
-// line := num st
-
-// 此时line不含lineno, 含空格
 std::vector<Token> Tokenizer::read_line(const std::string &line) {
     std::vector<std::string> words = util::split_by_space(line);
     // HINT: regex_match只考虑完全匹配
@@ -80,6 +64,9 @@ std::vector<Token> Tokenizer::read_line(const std::string &line) {
 
             // 只匹配相同开头(position == 0)的,
             if(!m.empty() && m.position(0) == 0) {
+                if (tk_type == TokenType::REM) {
+                    return tokens;
+                }
                 if(tk_type != TokenType::SPACE) {
                     fmt::print("found token: {}\n", m[0].str());
                     tokens.push_back({tk_type, m[0].str()});
@@ -100,8 +87,10 @@ std::vector<Token> Tokenizer::read_line(const std::string &line) {
 
 void Tokenizer::tokenize(BasicProgram&& program) {
     std::vector<TokenLine> res;
+    int max_line_no = 0;
     for(const auto& [line_no, line]: program.lines) {
         auto tokens = read_line(line);
+        max_line_no = std::max(max_line_no, line_no);
         res.push_back({line_no, tokens});
     }
     std::ranges::sort(res, [](const TokenLine& a, const TokenLine& b) {
@@ -110,6 +99,7 @@ void Tokenizer::tokenize(BasicProgram&& program) {
     this->token_lines = res;
     this->src_program = program;
 }
+
 void Tokenizer::tokenize(const std::filesystem::path& file_path) {
     std::ifstream ifs(file_path);
     if(!ifs.is_open()) {
@@ -134,5 +124,26 @@ std::vector<TokenLine> Tokenizer::read_lines(const std::vector<std::string>& lin
     this->tokenize(std::move(p));
     return this->token_lines;
 }
+
+Token Tokenizer::peek() const {
+    // 进位在eat中处理
+    if(line_offset >= token_lines.size()) {
+        throw std::runtime_error("read exceed EOF");
+    }
+    return token_lines[line_offset].tokens[inline_offset];
+}
+Token Tokenizer::eat(TokenType tk) {
+    auto next = this->peek();
+    if(next.type != tk) {
+        throw TokenizerErr(fmt::format("expect token: {}, but got: {}", tk2Str(tk), tk2Str(next.type)));
+    }
+    inline_offset++;
+    if(inline_offset >= token_lines[line_offset].tokens.size()) {
+        line_offset++;
+        inline_offset = 0;
+    }
+    return next;
+}
+
 
 } // namespace Token
