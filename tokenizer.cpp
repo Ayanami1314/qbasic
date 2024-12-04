@@ -128,9 +128,19 @@ std::vector<TokenLine> Tokenizer::read_lines(const std::vector<std::string>& lin
 Token Tokenizer::peek() const {
     // 进位在eat中处理
     if(line_offset >= token_lines.size()) {
-        throw std::runtime_error("read exceed EOF");
+        return {TokenType::TK_EOF, ""};
     }
     return token_lines[line_offset].tokens[inline_offset];
+}
+[[nodiscard]] Token Tokenizer::prev() const {
+    try {
+        int line_off = inline_offset == 0 ? line_offset - 1: line_offset;
+        int inline_off = inline_offset == 0 ? int(token_lines[line_off].tokens.size()) - 1: inline_offset - 1;
+        Token ret = token_lines[line_off].tokens[inline_off];
+        return ret;
+    } catch (std::exception& e) {
+        throw TokenizerErr(fmt::format("prev token error: {}", e.what()));
+    }
 }
 Token Tokenizer::eat(TokenType tk) {
     auto next = this->peek();

@@ -3,37 +3,39 @@
 //
 
 #include "parser.h"
-// factor : (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN | variable
 NumNode* Parser::parseNum() {
     auto token = tokenizer->peek();
     if(token.type != Token::TokenType::NUM) {
-            throw std::runtime_error("Invalid number token: " + Token::tk2Str(token.type));
+        throw std::runtime_error("Invalid number token: " + Token::tk2Str(token.type));
     }
     tokenizer->eat(token.type);
     if (!token.value.has_value()) {
-            throw std::runtime_error("number token value should not be null");
+        throw std::runtime_error("number token value should not be null");
     }
     return new NumNode(str2Number(token.value.value()));
 }
 StringNode* Parser::parseString() {
     auto token = tokenizer->peek();
     if(token.type != Token::TokenType::LITERAL) {
-            throw std::runtime_error("Invalid string token: " + Token::tk2Str(token.type));
+        std::string s = "Invalid string token: " + Token::tk2Str(token.type);
+        throw std::runtime_error(s);
     }
     tokenizer->eat(token.type);
     if (!token.value.has_value()) {
-            throw std::runtime_error("string token value should not be null");
+        auto s= "string token value should not be null";
+        throw std::runtime_error(s);
     }
     return new StringNode(token.value.value());
 }
 VarNode* Parser::parseVar() {
     auto token = tokenizer->peek();
     if(token.type != Token::TokenType::VAR) {
-        throw std::runtime_error("Invalid variable token: " + Token::tk2Str(token.type));
+        throw std::runtime_error("Invalid variable token: " + tk2Str(token.type));
     }
     tokenizer->eat(token.type);
     return new VarNode(token.value.value());
 }
+// factor : (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN | variable
 ASTNode* Parser::factor() {
     auto token = tokenizer->peek();
     if (token.type == Token::TokenType::OP_ADD || token.type == Token::TokenType::OP_SUB) {
@@ -56,7 +58,7 @@ ASTNode* Parser::factor() {
     throw std::runtime_error("Invalid factor token: " + Token::tk2Str(token.type));
 }
 
-
+// factor : (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN | variable
 // term_p1 : factor (POW factor)*
 // term_p2 : factor ((MUL | DIV | MOD) factor)*
 // term_p3 : term_p2 ((PLUS | MINUS) term_p2)*
@@ -73,7 +75,7 @@ ASTNode* Parser::term_p1() {
     return node;
 }
 ASTNode* Parser::term_p2() {
-    ASTNode* node = factor();
+    ASTNode* node = term_p1();
     auto token = tokenizer->peek();
     static std::set<Token::TokenType> p2_tokens = {
         Token::TokenType::OP_MUL,
@@ -82,28 +84,28 @@ ASTNode* Parser::term_p2() {
     };
     while(Token::typeIn(token.type, p2_tokens)) {
         tokenizer->eat(token.type);
-        node = new BinOpNode(node, factor(), token.type);
+        node = new BinOpNode(node, term_p1(), token.type);
         token = tokenizer->peek();
     }
     return node;
 }
 ASTNode* Parser::term_p3() {
-    ASTNode* node = factor();
+    ASTNode* node = term_p2();
     auto token = tokenizer->peek();
-    static std::set<Token::TokenType> p2_tokens = {
+    static std::set<Token::TokenType> p3_tokens = {
         Token::TokenType::OP_ADD,
         Token::TokenType::OP_SUB,
     };
-    while(Token::typeIn(token.type, p2_tokens)) {
+    while(Token::typeIn(token.type, p3_tokens)) {
         tokenizer->eat(token.type);
-        node = new BinOpNode(node, factor(), token.type);
+        node = new BinOpNode(node, term_p2(), token.type);
         token = tokenizer->peek();
     }
     return node;
 }
 
 ASTNode* Parser::term_p4() {
-    ASTNode* node = factor();
+    ASTNode* node = term_p3();
     auto token = tokenizer->peek();
     static std::set<Token::TokenType> p4_tokens = {
         Token::TokenType::OP_EQ,
@@ -115,7 +117,7 @@ ASTNode* Parser::term_p4() {
     };
     while(Token::typeIn(token.type, p4_tokens)) {
         tokenizer->eat(token.type);
-        node = new BinOpNode(node, factor(), token.type);
+        node = new BinOpNode(node, term_p3(), token.type);
         token = tokenizer->peek();
     }
     return node;
@@ -124,9 +126,12 @@ ASTNode* Parser::expr() {
     return term_p4();
 }
 
-// assignstmt : LET VAR ASSIGN expr
+// assignstmt : LET? VAR ASSIGN expr
 AssignStmtNode* Parser::parseAssignStmt() {
-    tokenizer->eat(Token::TokenType::LET);
+    auto node = tokenizer->peek();
+    if (node.type == Token::TokenType::LET) {
+        tokenizer->eat(Token::TokenType::LET);
+    }
     auto varNode = parseVar();
     tokenizer->eat(Token::TokenType::ASSIGN);
     ASTNode* expr_node = expr();
@@ -173,39 +178,83 @@ IFStmtNode* Parser::parseIFStmt() {
     int line_no = num_node->getInt();
     return new IFStmtNode(expr_node, line_no);
 }
-// program : (stmt*) eof
-void Parser::parseProgram() {
-    auto token_lines = tokenizer->get_token_lines();
-    for(auto& [line_no, tokens]: token_lines) {
-        tokenizer->set_line_offset(line_no);
-        tokenizer->set_inline_offset(0);
-        ASTNode* stmt = nullptr;
-        auto token = tokenizer->peek();
-        if(token.type == Token::TokenType::END) {
-            stmt = parseEndStmt();
-        } else if(token.type == Token::TokenType::PRINT) {
-            stmt = parsePrintStmt();
-        } else if(token.type == Token::TokenType::INPUT) {
-            stmt = parseInputStmt();
-        } else if(token.type == Token::TokenType::IF) {
-            stmt = parseIFStmt();
-        } else if(token.type == Token::TokenType::GOTO) {
-            stmt = parseGOTOStmt();
-        } else if(token.type == Token::TokenType::LET) {
-            stmt = parseAssignStmt();
-        } else {
-            throw std::runtime_error("Invalid stmt starter: " + Token::tk2Str(token.type));
-        }
-        stmts[line_no] = stmt;
-    }
 
+void Parser::parseSingleLine() {
+    auto [line_no, tokens] = tokenizer->get_single_line();
+    tokenizer->set_line_offset(line_no);
+    tokenizer->set_inline_offset(0);
+    ASTNode* stmt = nullptr;
+    auto token = tokenizer->peek();
+    if(token.type == Token::TokenType::END) {
+        stmt = parseEndStmt();
+    } else if(token.type == Token::TokenType::PRINT) {
+        stmt = parsePrintStmt();
+    } else if(token.type == Token::TokenType::INPUT) {
+        stmt = parseInputStmt();
+    } else if(token.type == Token::TokenType::IF) {
+        stmt = parseIFStmt();
+    } else if(token.type == Token::TokenType::GOTO) {
+        stmt = parseGOTOStmt();
+    } else if(token.type == Token::TokenType::LET) {
+        stmt = parseAssignStmt();
+    } else {
+        stmt = parseAssignStmt(); // A = A + 1, eg
+    }
+    stmts[line_no] = stmt;
+}
+// program : (stmt*) eof
+// SHOULD BE reentrant
+void Parser::parseProgram() {
+    auto eof = tokenizer->peek();
+    if (eof.type == Token::TokenType::TK_EOF) {
+        print("[Warning]: tokenizer has been used before calling parseProgram\n");
+        // has been parsed
+        return;
+    }
+    auto token_lines = tokenizer->get_token_lines();
+    auto size = token_lines.size();
+    for(int line_idx = 0; line_idx < size; ++line_idx) {
+        auto& [line_no, tokens] = token_lines[line_idx];
+        // tokenizer->set_line_offset(line_idx);
+        // tokenizer->set_inline_offset(0);
+        ASTNode* stmt = nullptr;
+        try {
+            auto token = tokenizer->peek();
+            if(token.type == Token::TokenType::END) {
+                stmt = parseEndStmt();
+            } else if(token.type == Token::TokenType::PRINT) {
+                stmt = parsePrintStmt();
+            } else if(token.type == Token::TokenType::INPUT) {
+                stmt = parseInputStmt();
+            } else if(token.type == Token::TokenType::IF) {
+                stmt = parseIFStmt();
+            } else if(token.type == Token::TokenType::GOTO) {
+                stmt = parseGOTOStmt();
+            } else if(token.type == Token::TokenType::LET) {
+                stmt = parseAssignStmt();
+            } else if(token.type == Token::TokenType::VAR){
+                stmt = parseAssignStmt(); // A = A + 1, eg
+            } else {
+                stmt = expr();
+            }
+            stmts[line_no] = stmt;
+        } catch (std::exception& e) {
+            print("Failed to parse line: {}, index {}\n", line_no, line_idx);
+            print("Error: {}\n", e.what());
+            return;
+        }
+    }
 }
 using fmt::print;
 using fmt::format;
 void printSingleStmt(int line_no, ASTNode* stmt) {
     // TODO
-    print("{}: {}\n", line_no, stmt->type());
+    print("{}: {}\n", line_no, stmt->toString());
 }
+void Parser::printAST(ASTNode* root) const {
+    printSingleStmt(0, root);
+}
+
 /*
  * line_no: -1 print all, else print specific line
  */
@@ -218,18 +267,32 @@ void Parser::printAST(int line_no) const {
         auto stmt_it = stmts.find(line_no);
         if(stmt_it == stmts.end()) {
             print("No stmt found for line: {}\n", line_no);
+
+            print("valid lines:");
+            for(const auto &[num, _]: stmts) {
+                print("{} ", num);
+            }
+            print("\n");
             return;
         }
         printSingleStmt(line_no, stmt_it->second);
     }
-
 }
-void Interpreter::visit(ASTNode *root) override {
+void Interpreter::visit(ASTNode *root) {
     if(root == nullptr) {
         return;
     }
     auto type = root->type();
+    // update var
+    if (type == ASTNodeType::Var) {
+        visit_Expr(root);
+    }
+    // const value node
+    if (belongsDataNode(root->type())) {
+        return;
+    }
     switch (type) {
+    // stmt
     case ASTNodeType::AssignStmt:
         return visit_AssignStmtNode(dynamic_cast<AssignStmtNode *>(root));
     case ASTNodeType::GOTOStmt:
@@ -242,12 +305,19 @@ void Interpreter::visit(ASTNode *root) override {
         return visit_InputStmtNode(dynamic_cast<InputStmtNode *>(root));
     case ASTNodeType::IFStmt:
         return visit_IFStmtNode(dynamic_cast<IFStmtNode *>(root));
+    // expr op
+    case ASTNodeType::UnaryOp:
+        return visit_UnaryOp(dynamic_cast<UnaryOpNode *>(root));
+    case ASTNodeType::BinOp:
+        return visit_BinOp(dynamic_cast<BinOpNode *>(root));
     default:
-        throw std::runtime_error(format("Should Only Visit Statements. visit: {}", root->type()));
+        string s = format("Invalid visit node type. visit: {}\n", ast2Str(root->type()));
+        throw std::runtime_error(s);
     }
 }
 
 void Interpreter::interpret() {
+
     try {
         parser->parseProgram();
     } catch (std::exception& e) {
@@ -256,6 +326,7 @@ void Interpreter::interpret() {
         status.err_msg = e.what();
         return;
     }
+
 
     auto stmts = parser->getStmts();
     vector<int> line_nos;
@@ -277,17 +348,35 @@ void Interpreter::interpret() {
     while(status.running && !status.err_msg.has_value() && line_no_idx < line_nos.size()) {
         auto stmt = stmts[status.current_line];
         line_no_idx++;
-        status.next_line = line_nos[line_no_idx];
+        status.next_line = status.current_line;
         try {
             visit(stmt); // may change status.running, status.err_msg, status.next_line
         } catch (std::exception& e) {
             print("Failed to interpret stmt: {}\n", e.what());
             status.err_msg = e.what();
+            status.running = false;
             return;
+        }
+        if (status.next_line == status.current_line) {
+            // 没有修改
+            if(line_no_idx >= line_nos.size()) {
+                status.running = false;
+                return;
+            }
+            status.next_line = line_nos[line_no_idx];
         }
         status.current_line = status.next_line;
         reset_idx(status.current_line);
+        if(line_no_idx >= line_nos.size()) {
+            status.running = false;
+            return;
+        }
         // normally end: idx == size
     }
+    status.running = false;
+}
+
+void Interpreter::interpret_SingleStep() {
+    // TODO
 }
 

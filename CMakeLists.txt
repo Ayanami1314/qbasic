@@ -37,7 +37,13 @@ add_executable(qbasic_test
         tokenizer.h
         tokenizer_test.cpp
         tokenizer_test.h
+        parser.h
+        parser.cpp
         main_test.cpp
+        parser_test.cpp
+        parser_test.h
+        interpret_test.cpp
+        interpret_test.h
 )
 
 add_test(

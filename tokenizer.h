@@ -1,7 +1,7 @@
 //
 // Created by ayanami on 12/2/24.
 //
-
+#pragma once
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
 
@@ -14,11 +14,12 @@
 #include <set>
 namespace Token {
 enum class TokenType {
-    OP_GT,
-    OP_LT,
+
     OP_EQ,
     OP_GE,
-    OP_LE,
+    OP_LE, // GE, LE > GT, LT
+    OP_GT,
+    OP_LT,
     OP_NE,
 
     OP_POW,
@@ -54,7 +55,7 @@ enum class TokenType {
 static inline bool typeIn(TokenType tk, std::set<TokenType> tks) {
     return tks.find(tk) != tks.end();
 }
-static inline std::string tk2Str(TokenType tk) {
+inline std::string tk2Str(TokenType tk) {
     switch (tk) {
     case TokenType::OP_GT: return ">";
     case TokenType::OP_ADD: return "+";
@@ -238,7 +239,9 @@ public:
     // for test
     [[nodiscard]] std::vector<TokenLine> read_lines(const std::vector<std::string>& lines);
     [[nodiscard]] auto get_token_lines() const { return token_lines; }
+    [[nodiscard]] auto get_single_line() const { return token_lines[line_offset]; }
     [[nodiscard]] Token peek() const;
+    [[nodiscard]] Token prev() const;
     Token eat(TokenType tk);
     [[nodiscard]] int get_line_offset() const {
         return line_offset;

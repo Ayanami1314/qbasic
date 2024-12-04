@@ -2,6 +2,7 @@
 // Created by ayanami on 12/3/24.
 //
 
+#pragma once
 #ifndef TOKENIZER_TEST_H
 #define TOKENIZER_TEST_H
 
