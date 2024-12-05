@@ -3,3 +3,7 @@
 //
 
 #include "cmd_executor.h"
+
+void CmdExecutor::receiveCmd(QString cmd) {
+
+}

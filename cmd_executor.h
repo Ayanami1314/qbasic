@@ -15,25 +15,21 @@
 class CmdExecutor: public QObject{
     Q_OBJECT
 private:
-    Interpreter* interpreter;
-    Token::Tokenizer* tokenizer;
-    Parser *parser;
-    Env* env;
+    std::shared_ptr<Interpreter> interpreter;
+    std::shared_ptr<Token::Tokenizer> tokenizer;
+    std::shared_ptr<Parser> parser;
+    std::shared_ptr<Env> env;
 private slots:
     void receiveCmd(QString cmd);
 public:
     CmdExecutor() {
-        tokenizer = new Token::Tokenizer();
-        env = new Env();
-        parser = new Parser(tokenizer, &(env->symbol_table));
-        interpreter = new Interpreter(parser);
+        tokenizer = std::make_shared<Token::Tokenizer>();
+        auto symbol_table = std::make_shared<SymbolTable>();
+        env = std::make_shared<Env>(symbol_table);
+        parser = std::make_shared<Parser>(tokenizer, symbol_table);
+        interpreter = std::make_shared<Interpreter>(parser, env);
     }
-    ~CmdExecutor() override {
-        // delete interpreter;
-        // delete parser;
-        // delete tokenizer;
-        // delete env;
-    }
+    ~CmdExecutor() override = default;
 };
 
 

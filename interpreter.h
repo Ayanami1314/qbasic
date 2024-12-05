@@ -15,8 +15,10 @@ using std::unordered_map;
 
 class Env {
 public:
-    SymbolTable symbol_table {};
-    Env() = default;
+    std::shared_ptr<SymbolTable> symbol_table {};
+    explicit Env(std::shared_ptr<SymbolTable> table) {
+        symbol_table = table;
+    }
 
 };
 using ProgramStatus = struct ProgramStatus {
@@ -30,19 +32,13 @@ using ProgramStatus = struct ProgramStatus {
 };
 class Interpreter: public NodeVisitor {
 private:
-    Parser* parser{};
-    Env* env{};
+    std::shared_ptr<Parser> parser{};
+    std::shared_ptr<Env> env{};
     ProgramStatus status{};
 
 public:
-    explicit Interpreter(Parser* p): parser(p) {
-        env = new Env();
-    };
-    explicit Interpreter(Parser* p, Env* e): parser(p), env(e) {};
-    ~Interpreter() override {
-        delete parser;
-        delete env;
-    }
+    explicit Interpreter(std::shared_ptr<Parser> p, std::shared_ptr<Env> e): parser(p), env(e) {};
+    ~Interpreter() override = default;
     void interpret();
     void interpret_SingleStep();
     void visit(ASTNode *root) override;
@@ -55,13 +51,13 @@ public:
         status.output_str.clear();
         return out_s;
     }
-    Parser *getParser() const {
+    [[nodiscard]] std::shared_ptr<Parser> getParser() const {
         return parser;
     }
-    Env *getEnv() const {
+    [[nodiscard]] std::shared_ptr<Env> getEnv() const {
         return env;
     }
-    ProgramStatus getStatus() const {
+    [[nodiscard]] ProgramStatus getStatus() const {
         return status;
     }
 
@@ -74,7 +70,7 @@ public:
     T getNodeVal(ASTNode* node) {
         if(node->type() == ASTNodeType::Var) {
             string var_name = dynamic_cast<VarNode*>(node)->getName();
-            auto v = env->symbol_table.get<T>(var_name);
+            auto v = env->symbol_table->get<T>(var_name);
             if(!v.has_value()) {
                 throw std::runtime_error(fmt::format("var {} not found", var_name));
             }
@@ -286,7 +282,7 @@ public:
         }
         if (node->type() == ASTNodeType::Var) {
             string var_name = dynamic_cast<VarNode*>(node)->getName();
-            auto v = env->symbol_table.get<std::any>(var_name);
+            auto v = env->symbol_table->get<std::any>(var_name);
             if(!v.has_value()) {
                 throw std::runtime_error(fmt::format("var {} not found", var_name));
             }
@@ -326,7 +322,7 @@ public:
         auto var_name = left->getName();
         visit_Expr(right);
         auto right_v = getNodeVal<std::any>(right);
-        env->symbol_table.set(var_name, right_v);
+        env->symbol_table->set(var_name, right_v);
         node->setValue(right_v);
     }
     void visit_GOTOStmtNode(GOTOStmtNode* node) {
@@ -347,15 +343,15 @@ public:
             auto num = str2Number(input);
             if(std::holds_alternative<int>(num)) {
                 int num_i = std::get<int>(num);
-                env->symbol_table.set<int>(node->getVar()->getName(), num_i);
+                env->symbol_table->set<int>(node->getVar()->getName(), num_i);
                 node->setValue(num_i);
             } else {
                 double num_d = std::get<double>(num);
-                env->symbol_table.set<double>(node->getVar()->getName(), num_d);
+                env->symbol_table->set<double>(node->getVar()->getName(), num_d);
                 node->setValue(num_d);
             }
         } catch (std::exception& e) {
-            env->symbol_table.set<string>(node->getVar()->getName(), input);
+            env->symbol_table->set<string>(node->getVar()->getName(), input);
             node->setValue(input);
         }
     }

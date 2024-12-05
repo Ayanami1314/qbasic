@@ -241,6 +241,7 @@ private:
     int inline_offset; // single line 的 offset
 public:
     Tokenizer();
+    ~Tokenizer() = default;
     void tokenize(BasicProgram&& program);
     void tokenize(const std::filesystem::path& file_path);
     // for test
@@ -266,7 +267,6 @@ public:
         this->inline_offset = inline_offset;
     }
 
-    ~Tokenizer() = default;
 };
 class TokenEOFErr: public std::runtime_error {
     std::string msg;

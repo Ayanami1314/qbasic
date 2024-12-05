@@ -10,13 +10,15 @@
 using std::vector;
 using std::string;
 using fmt::format;
-Interpreter* buildInterpreter(const vector<string>& src) {
-    auto test_tokenizer = new Token::Tokenizer();;
+std::shared_ptr<Interpreter> buildInterpreter(const vector<string>& src) {
+    auto test_tokenizer = std::make_shared<Token::Tokenizer>();;
     auto tokenLines = test_tokenizer->read_lines(src);
-    auto table = new SymbolTable();
-    auto test_parser = new Parser(test_tokenizer, table);
+    auto table = std::make_shared<SymbolTable>();
+    auto test_parser = std::make_shared<Parser>(test_tokenizer, table);
     test_parser->parseProgram();
-    return new Interpreter(test_parser);
+    auto env = std::make_shared<Env>(table);
+    auto interpreter = std::make_shared<Interpreter>(test_parser, env);
+    return interpreter;
 }
 void interpret_test::initTestCase() {
     qDebug() <<"Init test case\n";
@@ -49,7 +51,6 @@ void interpret_test::testEvalExpr() {
             return;
         }
     }
-    delete interpreter;
 }
 void interpret_test::testEvalExprSpecial() {
     vector<string> src{
@@ -74,7 +75,6 @@ void interpret_test::testEvalExprSpecial() {
             return;
         }
     }
-    delete interpreter;
 }
 void interpret_test::testEvalAssign() {
     vector<string> lines = {
@@ -95,16 +95,14 @@ void interpret_test::testEvalAssign() {
         interpreter->visit_AssignStmtNode(dynamic_cast<AssignStmtNode *>(stmt));
         QVERIFY2(std::any_cast<int>(stmt->getVal()) == ref_results[i], "Failed to evaluate assignment");
     }
-    auto a = interpreter->getEnv()->symbol_table.get<int>("A");
+    auto a = interpreter->getEnv()->symbol_table->get<int>("A");
     QVERIFY2(a == 1, format("wrong A {}", a.value()).c_str());
-    auto b = interpreter->getEnv()->symbol_table.get<int>("_B");
+    auto b = interpreter->getEnv()->symbol_table->get<int>("_B");
     QVERIFY2(b == 2, format("wrong B {}", b.value()).c_str());
-    auto c = interpreter->getEnv()->symbol_table.get<int>("C");
+    auto c = interpreter->getEnv()->symbol_table->get<int>("C");
     QVERIFY2(c == 3, format("wrong C {}", c.value()).c_str());
-    auto d = interpreter->getEnv()->symbol_table.get<int>("D");
+    auto d = interpreter->getEnv()->symbol_table->get<int>("D");
     QVERIFY2(d == 0, format("wrong D {}", d.value()).c_str());
-
-    delete interpreter;
 }
 void interpret_test::testRunWithJmp() {
     vector<string> lines = {
@@ -119,8 +117,7 @@ void interpret_test::testRunWithJmp() {
     auto stmts = parser->getStmts();
     QVERIFY2(stmts.size() == 4, "Failed to parse stmts");
     interpreter->interpret();
-    QVERIFY2(interpreter->getEnv()->symbol_table.get<int>("A") == 40, "Failed to evaluate assignment");
-    delete interpreter;
+    QVERIFY2(interpreter->getEnv()->symbol_table->get<int>("A") == 40, "Failed to evaluate assignment");
 }
 void interpret_test::testIO() {
     vector<string> lines = {

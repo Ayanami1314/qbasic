@@ -15,11 +15,11 @@ void parser_test::initTestCase() {
 
 
 void parser_test::testParseNum() {
-    Token::Tokenizer test_tokenizer;
+    auto test_tokenizer = std::make_shared<Token::Tokenizer>();
     vector<string> lines = {"10 1", "20 2", "30 232378", "40 0", "50 123456789"};
-    auto tokenLines = test_tokenizer.read_lines(lines);
-    SymbolTable test_table;
-    auto test_parser = new Parser(&test_tokenizer, &test_table);
+    auto tokenLines = test_tokenizer->read_lines(lines);
+    auto test_table = std::make_shared<SymbolTable>();
+    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
     auto ref_nums = vector<int>{1, 2, 232378, 0, 123456789};
     for(int i=0; i<5; i++) {
         auto [lineNo, tokens] = tokenLines[i];
@@ -31,7 +31,7 @@ void parser_test::testParseNum() {
     }
 }
 void parser_test::testParseOp() {
-    Token::Tokenizer test_tokenizer;
+
     vector<string> lines = {
         "10 1+2",
         "20 2/3",
@@ -43,10 +43,10 @@ void parser_test::testParseOp() {
         "80 ((1))",
     };
     // 问题: 88-99\n-1*2 算单行还是多行?
-
-    auto tokenLines = test_tokenizer.read_lines(lines);
-    SymbolTable test_table;
-    auto test_parser = new Parser(&test_tokenizer, &test_table);
+    auto test_tokenizer = std::make_shared<Token::Tokenizer>();
+    auto tokenLines = test_tokenizer->read_lines(lines);
+    auto test_table = std::make_shared<SymbolTable>();
+    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
     auto expr_1 = test_parser->expr();
     string what = "get type " + ast2Str(expr_1->type());
     QVERIFY2(expr_1->type() == ASTNodeType::BinOp, what.c_str());
@@ -129,7 +129,6 @@ void parser_test::testParseExpr() {
 
 }
 void parser_test::testParseAssign() {
-    Token::Tokenizer test_tokenizer;
     vector<string> lines = {
         "10 LET A = 1",
         "20 LET _B = 2",
@@ -137,10 +136,10 @@ void parser_test::testParseAssign() {
         "40 LET D = A * B - 3",
         "50 D = D + 1",
     };
-
-    auto tokenLines = test_tokenizer.read_lines(lines);
-    SymbolTable test_table;
-    auto test_parser = new Parser(&test_tokenizer, &test_table);
+    auto test_tokenizer = std::make_shared<Token::Tokenizer>();
+    auto tokenLines = test_tokenizer->read_lines(lines);
+    auto test_table = std::make_shared<SymbolTable>();
+    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
     for (int i=0; i<5; i++) {
         auto node = test_parser->parseAssignStmt();
         test_parser->printAST(node);
@@ -148,7 +147,6 @@ void parser_test::testParseAssign() {
     }
 }
 void parser_test::testParseIfAndGoto() {
-    Token::Tokenizer test_tokenizer;
     vector<string> lines = {
         "1 LET A = 1",
         "2 LET B = 2",
@@ -161,10 +159,10 @@ void parser_test::testParseIfAndGoto() {
         "70 IF 1 THEN 10",
         "80 GOTO 10",
     };
-
-    auto tokenLines = test_tokenizer.read_lines(lines);
-    SymbolTable test_table;
-    auto test_parser = new Parser(&test_tokenizer, &test_table);
+    auto test_tokenizer = std::make_shared<Token::Tokenizer>();
+    auto tokenLines = test_tokenizer->read_lines(lines);
+    auto test_table = std::make_shared<SymbolTable>();
+    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
     test_parser->parseProgram();
     auto stmts = test_parser->getStmts();
     QVERIFY2(stmts.size() == 10, "Failed to parse program");
@@ -192,7 +190,6 @@ void parser_test::testParseIfAndGoto() {
     QVERIFY2(stmts[80]->type() == ASTNodeType::GOTOStmt, "Failed to parse goto statement");
 }
 void parser_test::testIO() {
-    Token::Tokenizer test_tokenizer;
     vector<string> lines = {
         "10 PRINT 3",
         "20 INPUT n1",
@@ -200,10 +197,10 @@ void parser_test::testIO() {
         "40 LET res = n1 + n2",
         "50 PRINT res",
     };
-
-    auto tokenLines = test_tokenizer.read_lines(lines);
-    SymbolTable test_table;
-    auto test_parser = new Parser(&test_tokenizer, &test_table);
+    auto test_tokenizer = std::make_shared<Token::Tokenizer>();
+    auto tokenLines = test_tokenizer->read_lines(lines);
+    auto test_table = std::make_shared<SymbolTable>();
+    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
 
     test_parser->parseProgram();
     auto stmts = test_parser->getStmts();

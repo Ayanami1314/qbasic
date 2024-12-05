@@ -468,11 +468,13 @@ public:
 
 class Parser {
 private:
-    Token::Tokenizer* tokenizer;
-    SymbolTable* sym_table;
+    std::shared_ptr<Token::Tokenizer> tokenizer;
+    std::shared_ptr<SymbolTable> sym_table;
     std::map<int, ASTNode*> stmts; // based on line_no
 public:
-    explicit Parser(Token::Tokenizer* tokenizer, SymbolTable *table): tokenizer(tokenizer), sym_table(table) {
+    explicit Parser(std::shared_ptr<Token::Tokenizer> tokenizer,  std::shared_ptr<SymbolTable> table):
+    tokenizer(tokenizer), sym_table(table) {
+        // copy(+ref count)
     }
     NumNode* parseNum();
     StringNode* parseString();
@@ -496,9 +498,7 @@ public:
     }
     void printAST(int line_no) const;
     void printAST(ASTNode* root) const;
-    ~Parser() {
-        delete tokenizer;
-    }
+    ~Parser() = default;
 };
 
 
