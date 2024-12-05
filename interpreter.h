@@ -5,10 +5,15 @@
 
 #ifndef INTREPRETER_H
 #define INTREPRETER_H
+
+#include <QEventLoop>
+#include <QObject>
+#include <concepts>
 #include "parser.h"
 using std::string;
 using std::vector;
-using fmt::print;
+// using fmt::print;
+using fmt::format;
 using std::map;
 using std::unordered_map;
 
@@ -21,36 +26,158 @@ public:
     }
 
 };
+enum class ProgramMode {
+    NORMAL,
+    DEBUG,
+    DEV_DEBUG
+};
 using ProgramStatus = struct ProgramStatus {
     int current_line = -1;
     int next_line = 0;
     std::filesystem::path current_file;
     bool running = false;
     std::optional<std::string> err_msg;
-    std::string input_str{};
-    std::string output_str{};
+    ProgramMode mode = ProgramMode::DEV_DEBUG;
+    void reset() {
+        // only clear current_line, next_line, running, err_msg
+        current_line = -1;
+        next_line = 0;
+        running = false;
+        err_msg = {};
+    }
 };
+
+template<typename T>
+concept Streamable = requires(T& var) {
+    { std::cin >> var } -> std::convertible_to<std::istream&>;
+    { std::cout << var } -> std::convertible_to<std::ostream&>;
+};
+
+class MockInputStream : public QObject{
+    Q_OBJECT
+    std::deque<string> inputs;
+    bool fail = false;
+    bool bad = false;
+    bool waiting = false;
+    std::mutex mtx;
+public slots:
+    void receiveInput(std::string input) {
+        const std::lock_guard<std::mutex> lock(mtx);
+        inputs.push_back(input);
+        emit inputReady();
+    }
+signals:
+    void inputReady();
+public:
+    explicit MockInputStream() = default;
+    template<Streamable T>
+    void requireInput(T& var) {
+        QEventLoop loop;
+        connect(this, &MockInputStream::inputReady, &loop, &QEventLoop::quit);
+        waiting = true;
+        loop.exec();
+        {
+            const std::lock_guard<std::mutex> lock(mtx);
+            std::istringstream iss(inputs.front());
+            iss >> var;
+            fail = iss.fail();
+            bad = iss.bad();
+            if(!inputs.empty()) {
+                // in clear, may be empty
+                inputs.pop_front();
+            }
+            waiting = false;
+        }
+    }
+    void clear() {
+        // free possible blocked
+        if(waiting) {
+
+            emit inputReady();
+        }
+        const std::lock_guard<std::mutex> lock(mtx);
+        inputs.clear();
+    }
+};
+
+class MockOutputStream: public QObject{
+    Q_OBJECT
+    std::deque<string> outputs;
+    std::mutex out_mtx;
+signals:
+    void sendOutput(std::string output);
+public:
+    explicit MockOutputStream() = default;
+    template<Streamable T>
+    void output(const T& output) {
+        const std::lock_guard<std::mutex> lock(out_mtx);
+        outputs.push_back(output);
+        emit sendOutput(output);
+    }
+    auto lookOutput() {
+        const std::lock_guard<std::mutex> lock(out_mtx);
+        vector<string> outputs_copy;
+        std::ranges::copy(outputs, std::back_inserter(outputs_copy));
+        return outputs_copy;
+    }
+    auto getOutput() {
+        const std::lock_guard<std::mutex> lock(out_mtx);
+        if(outputs.empty()) {
+            return string{};
+        }
+        std::string out_str;
+        for (const auto& output: outputs) {
+            out_str += output;
+        }
+        output = {};
+        return out_str;
+    }
+    void clear() {
+        const std::lock_guard<std::mutex> lock(out_mtx);
+        outputs.clear();
+    }
+};
+// Error 直接用异常传递，调用interpreter的时候捕获runtime_error
 class Interpreter: public NodeVisitor {
+
+
 private:
     std::shared_ptr<Parser> parser{};
     std::shared_ptr<Env> env{};
     ProgramStatus status{};
-
+    MockInputStream inputStream{};
+    MockOutputStream outputStream{};
 public:
-    explicit Interpreter(std::shared_ptr<Parser> p, std::shared_ptr<Env> e): parser(p), env(e) {};
+    explicit Interpreter(std::shared_ptr<Parser> p, std::shared_ptr<Env> e,
+                         const ProgramMode mode = ProgramMode::DEV_DEBUG): parser(p), env(e) {
+        status.mode = mode;
+    };
+    [[nodiscard]] const MockInputStream* getInputStream() const {
+        return &inputStream;
+    }
+    [[nodiscard]] const MockOutputStream* getOutputStream() const {
+        return &outputStream;
+    }
     ~Interpreter() override = default;
     void interpret();
     void interpret_SingleStep();
+    void input(std::string var) {
+        if(status.mode == ProgramMode::DEV_DEBUG) {
+            std::istringstream iss(var);
+            std::cin.rdbuf(iss.rdbuf());
+        } else {
+            inputStream.receiveInput(var);
+        }
+    }
+    template<Streamable T>
+    void output(T output) {
+        if(status.mode == ProgramMode::DEV_DEBUG) {
+            std::cout << output;
+        } else {
+            outputStream.output(output);
+        }
+    }
     void visit(ASTNode *root) override;
-    // TODO simulate IO
-    void input(const std::string& input) {
-        status.input_str += input;
-    }
-    string output() {
-        auto out_s = status.output_str;
-        status.output_str.clear();
-        return out_s;
-    }
     [[nodiscard]] std::shared_ptr<Parser> getParser() const {
         return parser;
     }
@@ -60,7 +187,36 @@ public:
     [[nodiscard]] ProgramStatus getStatus() const {
         return status;
     }
-
+    void reset() {
+        // clear status
+        // clear env
+        // clear IO
+        status.reset();
+        env->symbol_table->clear();
+        inputStream.clear();
+        outputStream.clear();
+    }
+    void setMode(ProgramMode mode) {
+        status.mode = mode;
+    }
+    void setFile(std::filesystem::path file) {
+        status.current_file = std::move(file);
+    }
+    void loadFile(const std::filesystem::path &file, ProgramMode m = ProgramMode::DEV_DEBUG) {
+        reset();
+        setFile(file);
+        setMode(m);
+        parser->reload(file);
+    }
+    void switch2Dbg() {
+        // 如果是自测，那debug模式还是自测
+        if(status.mode == ProgramMode::DEV_DEBUG) {
+            this->reset();
+            return;
+        }
+        this->reset();
+        status.mode = ProgramMode::DEBUG;
+    }
 
     /*
      * 从ASTNode中获取值
@@ -335,9 +491,7 @@ public:
     void visit_InputStmtNode(InputStmtNode* node) {
         // 默认是string, 如果可以转换成数字就转换成数字
         string input;
-        std::cout << "?";
-        std::flush(std::cout);  // make doc happy
-        std::cin >> input;
+
         // HINT: INPUT n 定义n
         try {
             auto num = str2Number(input);
@@ -360,13 +514,13 @@ public:
         visit_Expr(expr);
         auto expr_v = getNodeVal<std::any>(expr);
         if(expr_v.type() == typeid(int)) {
-            print("{}", std::any_cast<int>(expr_v));
+            output(format("{}", std::any_cast<int>(expr_v)));
         }
         if(expr_v.type() == typeid(double)) {
-            print("{}", std::any_cast<double>(expr_v));
+            output(format("{}", std::any_cast<double>(expr_v)));
         }
         if(expr_v.type() == typeid(string)) {
-            print("{}", std::any_cast<string>(expr_v));
+            output(fmt::format("{}", std::any_cast<string>(expr_v)));
         }
     }
 };

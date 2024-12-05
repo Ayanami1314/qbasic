@@ -476,6 +476,11 @@ public:
     tokenizer(tokenizer), sym_table(table) {
         // copy(+ref count)
     }
+    void reload(const std::filesystem::path& path) {
+        stmts.clear();
+        tokenizer->reload(path);
+        sym_table->clear();
+    }
     NumNode* parseNum();
     StringNode* parseString();
     ASTNode* factor();

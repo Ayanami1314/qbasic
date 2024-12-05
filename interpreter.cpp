@@ -38,7 +38,7 @@ void Interpreter::visit(ASTNode *root) {
     case ASTNodeType::BinOp:
         return visit_BinOp(dynamic_cast<BinOpNode *>(root));
     default:
-        string s = format("Invalid visit node type. visit: {}\n", ast2Str(root->type()));
+        string s = fmt::format("Invalid visit node type. visit: {}\n", ast2Str(root->type()));
         throw std::runtime_error(s);
     }
 }

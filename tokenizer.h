@@ -244,6 +244,22 @@ public:
     ~Tokenizer() = default;
     void tokenize(BasicProgram&& program);
     void tokenize(const std::filesystem::path& file_path);
+    void resetOff() {
+        line_offset = 0;
+        inline_offset = 0;
+    }
+    void resetAll() {
+        resetOff();
+        token_lines.clear();
+    }
+    void reload(const std::filesystem::path& p) {
+        resetAll();
+        tokenize(p);
+    }
+    void reload(BasicProgram&& p) {
+        resetAll();
+        tokenize(std::move(p));
+    }
     // for test
     [[nodiscard]] std::vector<TokenLine> read_lines(const std::vector<std::string>& lines);
     [[nodiscard]] auto get_token_lines() const { return token_lines; }
