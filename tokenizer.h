@@ -109,7 +109,14 @@ inline bool isBinOp(TokenType tk) {
             return false;
     }
 }
-
+inline bool isRightAssociative(TokenType tk) {
+    switch (tk) {
+            case TokenType::OP_POW:
+            return true;
+            default:
+            return false;
+    }
+}
 
 inline bool isUnaryOp(TokenType tk) {
     switch (tk) {

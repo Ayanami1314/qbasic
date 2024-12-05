@@ -14,6 +14,7 @@ class interpret_test: public QObject{
 private slots:
     void initTestCase();
     void testEvalExpr();
+    void testEvalExprSpecial();
     void testEvalAssign();
     void testRunWithJmp();
     void testIO();

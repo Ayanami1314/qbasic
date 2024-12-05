@@ -18,13 +18,20 @@ find_package(Qt6 COMPONENTS
 #        Multimedia
         REQUIRED)
 find_package(fmt CONFIG REQUIRED)
- 
+# .ui AUTOUIC auto parse and gen .h
 add_executable(qbasic main.cpp
         tokenizer.h
         tokenizer.cpp
         util.h
         parser.cpp
-        parser.h)
+        parser.h
+        interpreter.cpp
+        interpreter.h
+        mainwindow.h
+        mainwindow.cpp
+        cmd_executor.cpp
+        cmd_executor.h
+)
 target_link_libraries(qbasic
         Qt::Core
         Qt::Gui
@@ -44,6 +51,10 @@ add_executable(qbasic_test
         parser_test.h
         interpret_test.cpp
         interpret_test.h
+        interpreter.cpp
+        interpreter.h
+        cmd_executor.cpp
+        cmd_executor.h
 )
 
 add_test(

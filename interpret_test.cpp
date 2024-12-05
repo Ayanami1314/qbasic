@@ -6,6 +6,7 @@
 #include "tokenizer.h"
 #include "parser.h"
 #include "util.h"
+#include "interpreter.h"
 using std::vector;
 using std::string;
 using fmt::format;
@@ -37,6 +38,31 @@ void interpret_test::testEvalExpr() {
     QVERIFY2(stmts.size() == 8, "Failed to parse stmts");
     vector<int> ref_results = {3, 0, 243, -11, -2, 7, 1, 1};
     for(int i=0;i<8;++i) {
+        try {
+            auto expr = stmts[(i+1)*10];
+            parser->printAST(expr);
+            interpreter->visit_Expr(expr);
+            qDebug() << std::any_cast<int>(expr->getVal()) << '\n';
+            QVERIFY2(std::any_cast<int>(expr->getVal()) == ref_results[i], "Failed to evaluate expression");
+        } catch (std::exception& e) {
+            QVERIFY2(1 == 0, e.what());
+            return;
+        }
+    }
+    delete interpreter;
+}
+void interpret_test::testEvalExprSpecial() {
+    vector<string> src{
+        "10 2 ** 2 ** 3",
+        "20 5 MOD -3",
+    };
+    auto interpreter = buildInterpreter(src);
+    auto parser = interpreter->getParser();
+    auto stmts = parser->getStmts();
+    // 2^8 == 256
+    QVERIFY2(stmts.size() == src.size(), "Failed to parse stmts");
+    vector<int> ref_results = {static_cast<int>(std::pow(2, 8)), -1};
+    for(int i=0;i<src.size();++i) {
         try {
             auto expr = stmts[(i+1)*10];
             parser->printAST(expr);
