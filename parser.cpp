@@ -35,7 +35,7 @@ VarNode* Parser::parseVar() {
     tokenizer->eat(token.type);
     return new VarNode(token.value.value());
 }
-// factor : (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN | variable
+// factor : (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN | variable | STRING
 ASTNode* Parser::factor() {
     auto token = tokenizer->peek();
     if (token.type == Token::TokenType::OP_ADD || token.type == Token::TokenType::OP_SUB) {
@@ -54,6 +54,9 @@ ASTNode* Parser::factor() {
     }
     if(token.type == Token::TokenType::VAR) {
         return parseVar();
+    }
+    if (token.type == Token::TokenType::LITERAL) {
+        return parseString();
     }
     throw std::runtime_error("Invalid factor token: " + Token::tk2Str(token.type));
 }

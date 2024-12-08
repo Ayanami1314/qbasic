@@ -126,6 +126,14 @@ void Interpreter::interpret() {
     status.running = true;
     while(status.running && !status.err_msg.has_value() && !status.break_at(status.current_line)) {
         interpret_SingleStep();
+        if(status.mode == ProgramMode::DEV || status.mode == ProgramMode::DEBUG) {
+            print("[DEBUG] Current line: {}\n", status.current_line);
+            print("[DEBUG] AST:\n");
+            parser->printAST(status.current_line);
+            print("[DEBUG] Env:\n");
+            env->print();
+            print("---\n");
+        }
     }
     status.running = false;
     if(status.break_at(status.current_line)) {

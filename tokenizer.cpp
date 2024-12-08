@@ -41,7 +41,7 @@ const std::map<TokenType, std::regex> basic_language_regex_table = {
         {TokenType::INPUT, std::regex(R"(INPUT)")},
         {TokenType::VAR, std::regex(R"([a-zA-Z_][a-zA-Z0-9_]*)")},
         {TokenType::NUM, std::regex(R"(\d+)")},
-        {TokenType::LITERAL, std::regex(R"(\w+)")},
+        {TokenType::LITERAL, std::regex(R"(".*?")")}, // "some string"
         {TokenType::SPACE, std::regex(R"(\s+)")},
 };
 Tokenizer::Tokenizer() :regex_table(basic_language_regex_table){
@@ -90,6 +90,9 @@ void Tokenizer::tokenize(BasicProgram&& program) {
     int max_line_no = 0;
     for(const auto& [line_no, line]: program.lines) {
         auto tokens = read_line(line);
+        if(tokens.empty()) {
+            continue;
+        }
         max_line_no = std::max(max_line_no, line_no);
         res.push_back({line_no, tokens});
     }

@@ -24,20 +24,24 @@ public:
     explicit Env(std::shared_ptr<SymbolTable> table) {
         symbol_table = table;
     }
+    void print() {
+        symbol_table->printSymbols();
+    }
 
 };
 enum class ProgramMode {
     NORMAL,
     DEBUG,
-    DEV_DEBUG
+    DEV,
 };
 using ProgramStatus = struct ProgramStatus {
     int current_line = -1;
     int next_line = 0;
     std::filesystem::path current_file;
     bool running = false;
+    bool blocking = false;
     std::optional<std::string> err_msg;
-    ProgramMode mode = ProgramMode::DEV_DEBUG;
+    ProgramMode mode = ProgramMode::DEV;
     std::set<int> breakpoints;
     void reset() {
         // only clear current_line, next_line, running, err_msg, breakpoints
@@ -165,7 +169,7 @@ private:
     MockOutputStream outputStream{};
 public:
     explicit Interpreter(std::shared_ptr<Parser> p, std::shared_ptr<Env> e,
-                         const ProgramMode mode = ProgramMode::DEV_DEBUG): parser(p), env(e) {
+                         const ProgramMode mode = ProgramMode::DEV): parser(p), env(e) {
         reset();
         status.mode = mode;
     };
@@ -179,16 +183,29 @@ public:
     void interpret();
     void interpret_SingleStep();
     void input(std::string var) {
-        if(status.mode == ProgramMode::DEV_DEBUG) {
-            std::istringstream iss(var);
+        print("[DEBUG] input {}\n", var);
+        if(status.mode == ProgramMode::DEV) {
+            static std::istringstream iss;
+            iss.str(var);
             std::cin.rdbuf(iss.rdbuf());
         } else {
             inputStream.receiveInput(var);
         }
     }
     template<Streamable T>
+    void requireInput(T& var) {
+        status.blocking = true;
+        print("[DEBUG] waiting for input ...\n");
+        if(status.mode == ProgramMode::DEV) {
+            std::cin >> var;
+        } else {
+            inputStream.requireInput(var);
+        }
+        status.blocking = false;
+    }
+    template<Streamable T>
     void output(T output) {
-        if(status.mode == ProgramMode::DEV_DEBUG) {
+        if(status.mode == ProgramMode::DEV) {
             std::cout << output;
         } else {
             outputStream.output(output);
@@ -219,25 +236,37 @@ public:
     void setFile(std::filesystem::path file) {
         status.current_file = std::move(file);
     }
-    void loadFile(const std::filesystem::path &file, ProgramMode m = ProgramMode::DEV_DEBUG) {
+    void loadFile(const std::filesystem::path &file, ProgramMode m = ProgramMode::DEV) {
         reset();
         setFile(file);
         setMode(m);
         parser->reload(file);
     }
-    void loadProgram(Token::BasicProgram&& program, ProgramMode m = ProgramMode::DEV_DEBUG) {
+    void loadProgram(Token::BasicProgram&& program, ProgramMode m = ProgramMode::DEV) {
         reset();
         setMode(m);
         parser->reload(std::move(program));
     }
+    void reload() {
+        if (status.current_file.empty()) {
+            throw std::runtime_error("No file loaded");
+        }
+        loadFile(status.current_file, status.mode);
+    }
     void switch2Dbg() {
         // 如果是自测，那debug模式还是自测
-        if(status.mode == ProgramMode::DEV_DEBUG) {
+        if(status.mode == ProgramMode::DEV) {
             this->reset();
             return;
         }
         this->reset();
         status.mode = ProgramMode::DEBUG;
+    }
+    void addBreakpoint(int line) {
+        status.add_breakpoint(line);
+    }
+    void deleteBreakpoint(int line) {
+        status.delete_breakpoint(line);
     }
 
     /*
@@ -316,22 +345,22 @@ public:
                     result = static_cast<int>(std::pow(left_i, right_i));
                     break;
                 case Token::TokenType::OP_GT:
-                    result = left_i > right_i;
+                    result = left_i > right_i ? 1 : 0;
                     break;
                 case Token::TokenType::OP_LT:
-                    result = left_i < right_i;
+                    result = left_i < right_i ? 1 : 0;
                     break;
                 case Token::TokenType::OP_GE:
-                    result = left_i >= right_i;
+                    result = left_i >= right_i ? 1 : 0;
                     break;
                 case Token::TokenType::OP_LE:
-                    result = left_i <= right_i;
+                    result = left_i <= right_i ? 1 : 0;
                     break;
                 case Token::TokenType::OP_EQ:
-                    result = left_i == right_i;
+                    result = left_i == right_i ? 1 : 0;
                     break;
                 case Token::TokenType::OP_NE:
-                    result = left_i != right_i;
+                    result = left_i != right_i ? 1 : 0;
                     break;
                 default:
                     throw std::runtime_error(fmt::format("BinOpNode Add: Invalid binary operator {}",
@@ -360,22 +389,22 @@ public:
                     result = std::pow(left_d, right_d);
                     break;
                 case Token::TokenType::OP_GT:
-                    result = left_d > right_d;
+                    result = left_d > right_d ? 1 : 0;
                     break;
                 case Token::TokenType::OP_LT:
-                    result = left_d < right_d;
+                    result = left_d < right_d ? 1 : 0;
                     break;
                 case Token::TokenType::OP_GE:
-                    result = left_d >= right_d;
+                    result = left_d >= right_d ? 1 : 0;
                     break;
                 case Token::TokenType::OP_LE:
-                    result = left_d <= right_d;
+                    result = left_d <= right_d ? 1 : 0;
                     break;
                 case Token::TokenType::OP_EQ:
-                    result = left_d == right_d;
+                    result = left_d == right_d ? 1 : 0;
                     break;
                 case Token::TokenType::OP_NE:
-                    result = left_d != right_d;
+                    result = left_d != right_d ? 1 : 0;
                     break;
                 default:
                     auto s = fmt::format("BinOpNode Add: Invalid binary operator {}",
@@ -390,22 +419,22 @@ public:
                 result = std::any_cast<string>(left_v) + std::any_cast<string>(right_v);
                 break;
             case Token::TokenType::OP_GT:
-                result = std::any_cast<string>(left_v) > std::any_cast<string>(right_v);
+                result = std::any_cast<string>(left_v) > std::any_cast<string>(right_v) ? 1 : 0;
                 break;
             case Token::TokenType::OP_LT:
-                result = std::any_cast<string>(left_v) < std::any_cast<string>(right_v);
+                result = std::any_cast<string>(left_v) < std::any_cast<string>(right_v) ? 1 : 0;
                 break;
             case Token::TokenType::OP_GE:
-                result = std::any_cast<string>(left_v) >= std::any_cast<string>(right_v);
+                result = std::any_cast<string>(left_v) >= std::any_cast<string>(right_v) ? 1 : 0;
                 break;
             case Token::TokenType::OP_LE:
-                result = std::any_cast<string>(left_v) <= std::any_cast<string>(right_v);
+                result = std::any_cast<string>(left_v) <= std::any_cast<string>(right_v) ? 1 : 0;
                 break;
             case Token::TokenType::OP_EQ:
-                result = std::any_cast<string>(left_v) == std::any_cast<string>(right_v);
+                result = std::any_cast<string>(left_v) == std::any_cast<string>(right_v) ? 1 : 0;
                 break;
             case Token::TokenType::OP_NE:
-                result = std::any_cast<string>(left_v) != std::any_cast<string>(right_v);
+                result = std::any_cast<string>(left_v) != std::any_cast<string>(right_v) ? 1 : 0;
                 break;
             default:
                 string s = fmt::format("BinOpNode Add: Invalid binary operator {}",
@@ -512,8 +541,8 @@ public:
     }
     void visit_InputStmtNode(InputStmtNode* node) {
         // 默认是string, 如果可以转换成数字就转换成数字
-        string input;
-
+        string input = "undefined";
+        requireInput(input);
         // HINT: INPUT n 定义n
         try {
             auto num = str2Number(input);

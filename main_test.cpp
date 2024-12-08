@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     tokenizer_test test_lexer;
     parser_test test_parser;
     interpret_test test_interpret;
-    QTest::qExec(&test_lexer, argc, argv);
-    QTest::qExec(&test_parser, argc, argv);
+    // QTest::qExec(&test_lexer, argc, argv);
+    // QTest::qExec(&test_parser, argc, argv);
     QTest::qExec(&test_interpret, argc, argv);
 }

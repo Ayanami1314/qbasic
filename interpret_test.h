@@ -11,6 +11,7 @@
 
 class interpret_test: public QObject{
     Q_OBJECT
+
 private slots:
     void initTestCase();
     void testEvalExpr();
@@ -19,6 +20,12 @@ private slots:
     void testRunWithJmp();
     void testIO();
     void cleanupTestCase();
+
+    // file test
+    void testSumOfOneToN();
+    void testFibonacci();
+    void testPrime();
+    void testFactorial();
 };
 
 
