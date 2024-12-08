@@ -33,7 +33,8 @@ void CmdExecutor::handleCmdRun() {
 
 }
 void CmdExecutor::handleCmdClear() {
-
+    interpreter->reset();
+    // clear ui
 }
 void CmdExecutor::handleCmdResume() {
 

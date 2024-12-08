@@ -476,11 +476,7 @@ public:
     tokenizer(tokenizer), sym_table(table) {
         // copy(+ref count)
     }
-    void reload(const std::filesystem::path& path) {
-        stmts.clear();
-        tokenizer->reload(path);
-        sym_table->clear();
-    }
+
     NumNode* parseNum();
     StringNode* parseString();
     ASTNode* factor();
@@ -504,6 +500,22 @@ public:
     void printAST(int line_no) const;
     void printAST(ASTNode* root) const;
     ~Parser() = default;
+    /**
+     * 重新加载程序, 重新解析
+     * @param path
+     */
+    void reload(const std::filesystem::path& path) {
+        stmts.clear();
+        tokenizer->reload(path);
+        sym_table->clear();
+        this->parseProgram();
+    }
+    void reload(Token::BasicProgram&& program) {
+        stmts.clear();
+        tokenizer->reload(std::move(program));
+        sym_table->clear();
+        this->parseProgram();
+    }
 };
 
 

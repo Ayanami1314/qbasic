@@ -38,13 +38,30 @@ using ProgramStatus = struct ProgramStatus {
     bool running = false;
     std::optional<std::string> err_msg;
     ProgramMode mode = ProgramMode::DEV_DEBUG;
+    std::set<int> breakpoints;
     void reset() {
-        // only clear current_line, next_line, running, err_msg
+        // only clear current_line, next_line, running, err_msg, breakpoints
         current_line = -1;
         next_line = 0;
         running = false;
         err_msg = {};
+        breakpoints.clear();
     }
+    void add_breakpoint(int line) {
+        breakpoints.insert(line);
+    }
+    void delete_breakpoint(int line) {
+        for(auto it = breakpoints.begin(); it != breakpoints.end(); ++it) {
+            if(*it == line) {
+                breakpoints.erase(it);
+                return;
+            }
+        }
+    }
+    bool break_at(int line_no) {
+        return breakpoints.contains(line_no);
+    }
+
 };
 
 template<typename T>
@@ -77,13 +94,13 @@ public:
         waiting = true;
         loop.exec();
         {
-            const std::lock_guard<std::mutex> lock(mtx);
-            std::istringstream iss(inputs.front());
-            iss >> var;
-            fail = iss.fail();
-            bad = iss.bad();
             if(!inputs.empty()) {
                 // in clear, may be empty
+                const std::lock_guard<std::mutex> lock(mtx);
+                std::istringstream iss(inputs.front());
+                iss >> var;
+                fail = iss.fail();
+                bad = iss.bad();
                 inputs.pop_front();
             }
             waiting = false;
@@ -92,7 +109,6 @@ public:
     void clear() {
         // free possible blocked
         if(waiting) {
-
             emit inputReady();
         }
         const std::lock_guard<std::mutex> lock(mtx);
@@ -129,7 +145,7 @@ public:
         for (const auto& output: outputs) {
             out_str += output;
         }
-        output = {};
+        outputs = {};
         return out_str;
     }
     void clear() {
@@ -150,6 +166,7 @@ private:
 public:
     explicit Interpreter(std::shared_ptr<Parser> p, std::shared_ptr<Env> e,
                          const ProgramMode mode = ProgramMode::DEV_DEBUG): parser(p), env(e) {
+        reset();
         status.mode = mode;
     };
     [[nodiscard]] const MockInputStream* getInputStream() const {
@@ -207,6 +224,11 @@ public:
         setFile(file);
         setMode(m);
         parser->reload(file);
+    }
+    void loadProgram(Token::BasicProgram&& program, ProgramMode m = ProgramMode::DEV_DEBUG) {
+        reset();
+        setMode(m);
+        parser->reload(std::move(program));
     }
     void switch2Dbg() {
         // 如果是自测，那debug模式还是自测
