@@ -43,3 +43,4 @@ Welcome to the QBasic project, a minimal BASIC language interpreter. This projec
 - Use ctrl+s to save the current code, which will bring up the save file dialog
 - The program cannot be run directly before loading, please save the code first
 5. Other windows: No special instructions
+6. Example programs: Please refer to the example programs in the `programs` folder
