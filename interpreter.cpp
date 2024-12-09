@@ -104,7 +104,11 @@ void Interpreter::interpret_SingleStep() {
     try {
         status.current_line = status.next_line;
         visit(stmts[status.next_line]); // might change next_line
-        astOutput(stmts[status.next_line]->toString());
+        // astOutput(stmts[status.next_line]->toString());
+        auto strs = stmts[status.next_line]->toTabbedString();
+        for(const auto& s: strs) {
+            astOutput(s);
+        }
     } catch (std::exception& e) {
         print("Failed to interpret stmt: {}\n", e.what());
         status.err_msg = e.what();

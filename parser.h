@@ -154,6 +154,7 @@ public:
     }
     virtual ASTNodeType type() = 0;
     virtual string toString() = 0;
+    virtual vector<string> toTabbedString() = 0;
 
 };
 using NumType = std::variant<int, double>;
@@ -207,6 +208,9 @@ public:
         }
         return std::to_string(std::any_cast<double>(num));
     }
+    vector<string> toTabbedString() override {
+        return {toString()};
+    }
     [[nodiscard]] int getInt() const {
         if(util::ConvAny<int>(getVal())) {
             return std::any_cast<int>(getVal());
@@ -236,6 +240,9 @@ public:
     [[nodiscard]] string getString() const {
             return std::any_cast<string>(getVal());
     }
+    vector<string> toTabbedString() override {
+            return {toString()};
+    }
 };
 class DataNode: public ASTNode {
     std::any data;
@@ -251,6 +258,9 @@ public:
     }
     [[nodiscard]] std::any getData() const {
             return std::any_cast<std::any>(getVal());
+    }
+    vector<string> toTabbedString() override {
+            return {toString()};
     }
 };
 
@@ -289,6 +299,19 @@ public:
     string toString() override {
         return fmt::format("BinOpNode: {} {} {}", left->toString(),  tk2Str(op), right->toString());
     }
+    vector<string> toTabbedString() override {
+        vector<string> res;
+        res.push_back(Token::tk2Str(op));
+        auto left_strs = left->toTabbedString();
+        for(const auto& ls: left_strs) {
+            res.push_back("\t"+ls);
+        }
+        auto right_strs = right->toTabbedString();
+        for(const auto& rs: right_strs) {
+            res.push_back("\t"+rs);
+        }
+        return res;
+    }
 };
 class UnaryOpNode: public ASTNode {
     ASTNode* expr;
@@ -319,7 +342,15 @@ public:
     void setOp(Token::TokenType o) {
         this->op = o;
     }
-
+    vector<string> toTabbedString() override {
+        vector<string> res;
+        res.push_back(Token::tk2Str(op));
+        auto expr_strs = expr->toTabbedString();
+        for(const auto& es: expr_strs) {
+            res.push_back("\t"+es);
+        }
+        return res;
+    }
 };
 
 
@@ -345,7 +376,9 @@ public:
     void setValue(std::any v) override {
         throw std::runtime_error("You should never setVal from var: lookup var in env");
     }
-
+    vector<string> toTabbedString() override {
+        return {toString()};
+    }
 };
 
 class AssignStmtNode: public ASTNode {
@@ -376,7 +409,19 @@ public:
     void setRight(ASTNode *right) {
         this->right = right;
     }
-
+    vector<string> toTabbedString() override {
+        vector<string> res;
+        res.push_back("LET =");
+        auto left_strs = left->toTabbedString();
+        for(const auto &ls: left_strs) {
+            res.push_back("\t"+ls);
+        }
+        auto right_strs = right->toTabbedString();
+        for(const auto& rs: right_strs) {
+            res.push_back("\t"+rs);
+        }
+        return res;
+    }
 };
 
 // QBasic 只支持goto 常数
@@ -398,6 +443,9 @@ public:
         line_no = lineNo;
     }
     ~GOTOStmtNode() override = default;
+    vector<string> toTabbedString() override {
+        return {"GOTO", "\t"+std::to_string(line_no)};
+    }
 };
 
 
@@ -410,6 +458,9 @@ public:
             return "EndStmtNode";
     }
     ~EndStmtNode() override = default;
+    vector<string> toTabbedString() override {
+            return {"END"};
+    }
 };
 
 class PrintStmtNode: public ASTNode {
@@ -429,6 +480,15 @@ public:
     }
     void setExpr(ASTNode* e) {
         this->expr = e;
+    }
+    vector<string> toTabbedString() override {
+        vector<string> res;
+        res.push_back("PRINT");
+        auto expr_strs = expr->toTabbedString();
+        for(const auto& es: expr_strs) {
+            res.push_back("\t"+es);
+        }
+        return res;
     }
 };
 
@@ -451,7 +511,15 @@ public:
     void setVar(VarNode* v) {
         this->var = v;
     }
-
+    vector<string> toTabbedString() override {
+        vector<string> res;
+        res.push_back("INPUT");
+        auto var_strs = var->toTabbedString();
+        for (const auto& vs: var_strs) {
+            res.push_back("\t"+vs);
+        }
+        return res;
+    }
 };
 
 
@@ -482,7 +550,16 @@ public:
     void setNext(int next_if_match) {
         this->next_if_match = next_if_match;
     }
-
+    vector<string> toTabbedString() override {
+        vector<string> res;
+        res.push_back("IF THEN");
+        auto cond_strs = cond->toTabbedString();
+        for(const auto& cs: cond_strs) {
+            res.push_back("\t"+cs);
+        }
+        res.push_back("\t" + std::to_string(next_if_match));
+        return res;
+    }
 };
 inline bool belongsDataNode(ASTNodeType type) {
     return type == ASTNodeType::Num || type == ASTNodeType::String |
@@ -543,6 +620,9 @@ public:
         tokenizer->reload(std::move(program));
         sym_table->clear();
         this->parseProgram();
+    }
+    [[nodiscard]] vector<string> getTabbedAST(int line_no) const {
+        return stmts.at(line_no)->toTabbedString();
     }
 };
 
