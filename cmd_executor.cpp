@@ -28,6 +28,10 @@ void CmdExecutor::runCmd(Command cmd, const std::vector<std::string>& argv) {
             handleCmdDebug(argv);
             break;
         case Command::ADD_BREAKPOINT:
+            handleCmdAddBreakpoint(argv);
+            break;
+        case Command::REMOVE_BREAKPOINT:
+            handleCmdRemoveBreakpoint(argv);
             break;
         default:
             throw std::runtime_error("Invalid command");
@@ -60,20 +64,38 @@ void CmdExecutor::handleCmdLoad(const vector<std::string>& argv) {
     interpreter->loadFile(choosed_file, mode);
 }
 void CmdExecutor::handleCmdDebug(const vector<std::string>& argv) {
-    interpreter->setMode(ProgramMode::DEBUG);
-    interpreter->reload();
+    try {
+        mode = ProgramMode::DEBUG;
+        interpreter->setMode(ProgramMode::DEBUG);
+        interpreter->reload();
+    } catch (std::exception& e) {
+        print("Failed to debug program: {}\n", e.what());
+        emit sendError(QString::fromStdString(e.what()));
+    }
+
 }
 void CmdExecutor::handleCmdRun(const vector<std::string>& argv) {
-    interpreter->setMode(ProgramMode::NORMAL);
-    interpreter->reload();
-    interpreter->interpret();
+    try {
+        interpreter->setMode(mode);
+        interpreter->reload();
+        interpreter->interpret();
+    } catch (std::exception& e) {
+        print("Failed to run program: {}\n", e.what());
+        emit sendError(QString::fromStdString(e.what()));
+    }
+
 }
 void CmdExecutor::handleCmdClear(const vector<std::string>& argv) {
     interpreter->reset();
     // clear ui
 }
 void CmdExecutor::handleCmdResume(const vector<std::string>& argv) {
-    interpreter->interpret();
+    try {
+        interpreter->interpret();
+    } catch (std::exception& e) {
+        print("Failed to debug program: {}\n", e.what());
+        emit sendError(QString::fromStdString(e.what()));
+    }
 }
 void CmdExecutor::handleCmdStop(const vector<std::string>& argv) {
    // TODO: stop如何打断input之类状态？
@@ -85,12 +107,15 @@ void CmdExecutor::handleCmdAddBreakpoint(const vector<std::string>& argv) {
         throw std::runtime_error("Invalid arguments");
     }
     int line_no = std::stoi(argv[0]);
+    print("add breakpoint: {}", line_no);
     interpreter->addBreakpoint(line_no);
+    emit breakpointChanged();
 }
 void CmdExecutor::handleCmdRemoveBreakpoint(const vector<std::string>& argv) {
     if (argv.size() != 1) {
-            throw std::runtime_error("Invalid arguments");
+        throw std::runtime_error("Invalid arguments");
     }
     int line_no = std::stoi(argv[0]);
     interpreter->deleteBreakpoint(line_no);
+    emit breakpointChanged();
 }

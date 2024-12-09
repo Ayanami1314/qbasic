@@ -57,10 +57,38 @@ public:
     void clear() {
         symbols.clear();
     }
+    // TODO: support types
+    // 没有反射的丑态, 只能自己做个简易版本
+    // 目前只支持int string
     void printSymbols() {
         for(const auto& [key, value]: symbols) {
-            print("key: {}, value: {}\n", key, std::any_cast<int>(value));
+            if(util::ConvAny<int>(value)) {
+                print("key: {}, value: {}\n", key, std::any_cast<int>(value));
+            } else if (util::ConvAny<string>(value)) {
+                print("key: {}, value: {}\n", key, std::any_cast<string>(value));
+            } else if (util::ConvAny<double>(value)) {
+                print("key: {}, value: {}\n", key, std::any_cast<double>(value));
+            } else {
+                print("key: {}, value: {}\n", key, "unknown type value");
+            }
         }
+    }
+    vector<string> getRepl() const {
+        vector<string> res;
+        for(const auto& [key, value]: symbols) {
+            string s;
+            if(util::ConvAny<int>(value)) {
+                s = fmt::format("key: {}, value: {}", key, std::any_cast<int>(value));
+            } else if (util::ConvAny<string>(value)) {
+                s = fmt::format("key: {}, value: {}", key, std::any_cast<string>(value));
+            } else if (util::ConvAny<double>(value)) {
+                s = fmt::format("key: {}, value: {}", key, std::any_cast<double>(value));
+            } else {
+                s = fmt::format("key: {}, value: {}\n", key, "unknown type value");
+            }
+            res.push_back(s);
+        }
+        return res;
     }
 
 };

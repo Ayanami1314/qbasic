@@ -273,7 +273,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <item>
          <widget class="QLabel" name="labelCommand">
           <property name="text">
-           <string>命令输入窗口</string>
+           <string>命令窗口</string>
           </property>
          </widget>
         </item>
@@ -297,6 +297,66 @@ li.checked::marker { content: &quot;\2612&quot;; }
            </font>
           </property>
          </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelInput">
+          <property name="text">
+           <string>输入窗口</string>
+          </property>
+         </widget>
+        </item>
+<!--        <item>-->
+<!--         <widget class="QLineEdit" name="inputLineEdit">-->
+<!--          <property name="minimumSize">-->
+<!--           <size>-->
+<!--            <width>0</width>-->
+<!--            <height>35</height>-->
+<!--           </size>-->
+<!--          </property>-->
+<!--          <property name="sizeIncrement">-->
+<!--           <size>-->
+<!--            <width>0</width>-->
+<!--            <height>20</height>-->
+<!--           </size>-->
+<!--          </property>-->
+<!--          <property name="font">-->
+<!--           <font>-->
+<!--            <pointsize>16</pointsize>-->
+<!--           </font>-->
+<!--          </property>-->
+<!--         </widget>-->
+<!--        </item>-->
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_input">
+          <item>
+           <widget class="QLabel" name="labelInputRequired">
+            <property name="text">
+             <string>等待输入:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="inputLineEdit">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>35</height>
+             </size>
+            </property>
+            <property name="sizeIncrement">
+             <size>
+              <width>0</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>

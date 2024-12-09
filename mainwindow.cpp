@@ -3,37 +3,78 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QTimer>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-{
+    , ui(new Ui::MainWindow) {
     ui->setupUi(this);
+    ui->labelInputRequired->setVisible(false);
     setUIExitDebugMode();
     cmdExecutor = new CmdExecutor();
-    connect(ui->btnDebugMode, &QPushButton::clicked, this, &MainWindow::setUIForDebugMode);
-    connect(ui->btnExitDebugMode, &QPushButton::clicked, this, &MainWindow::setUIExitDebugMode);
+    connect(ui->btnDebugMode, &QPushButton::clicked, this, [this]() {
+        setUIForDebugMode();
+        cmdExecutor->setMode(ProgramMode::DEBUG);
+    });
+    connect(ui->btnExitDebugMode, &QPushButton::clicked, this, [this]() {
+        setUIExitDebugMode();
+        cmdExecutor->setMode(ProgramMode::NORMAL);
+    });
     connect(ui->btnClearCode, &QPushButton::clicked, this, &MainWindow::clearAllDisplays);
     connect(this, &MainWindow::sendCommand, cmdExecutor, &CmdExecutor::receiveCmd);
     connect(cmdExecutor, &CmdExecutor::sendOutput, ui->textBrowser, &QTextBrowser::append);
     // stderr = stdout
     connect(cmdExecutor, &CmdExecutor::sendError, ui->textBrowser, &QTextBrowser::append);
-    // TODO: input area
-    // TODO: load button click file choose
+
     connect(ui->btnLoadCode, &QPushButton::clicked, this, &MainWindow::openFileDialog);
     connect(ui->btnRunCode, &QPushButton::clicked, [this](){
-        cmdExecutor->runCmd(Command::RUN, {});
+        // 此处必须解耦, 否则可能卡在input等,相当于分离的线程
+        sendCommand("RUN");
+        if(cmdExecutor->getMode() == ProgramMode::DEBUG) {
+             showEnv();
+        }
     });
     connect(ui->btnDebugResume, &QPushButton::clicked, [this](){
-        cmdExecutor->runCmd(Command::RESUME, {});
+        sendCommand("RESUME");
+        if(cmdExecutor->getMode() == ProgramMode::DEBUG) {
+            showEnv();
+        }
     });
     connect(ui->btnDebugMode, &QPushButton::clicked, [this](){
-        cmdExecutor->runCmd(Command::DEBUG, {});
+        sendCommand("DEBUG");
+        showEnv();
     });
     connect(ui->btnExitDebugMode, &QPushButton::clicked, [this](){
-            cmdExecutor->runCmd(Command::STOP, {});
+        sendCommand("STOP");
+        showBreakpoints();
     });
+    connect(this, &MainWindow::sendInput, cmdExecutor, &CmdExecutor::receiveInput);
+    connect(cmdExecutor, &CmdExecutor::sendAST, ui->treeDisplay, &QTextBrowser::append);
+    connect(cmdExecutor, &CmdExecutor::waitingForInput, [this](){
+        ui->inputLineEdit->setEnabled(true);
+        ui->labelInputRequired->setVisible(true);
+    });
+    connect(cmdExecutor, &CmdExecutor::sendError, [this](QString error){
+        QMessageBox::warning(this, tr("Error"), error);
+    });
+    connect(cmdExecutor, &CmdExecutor::breakpointChanged, this, &MainWindow::showBreakpoints);
 }
+void MainWindow::showEnv() {
+    auto repl = cmdExecutor->getEnv()->getRepl();
+    ui->monitorDisplay->clear();
+    for(const auto& s: repl) {
+        ui->monitorDisplay->append(QString::fromStdString(s));
+    }
+}
+void MainWindow::showBreakpoints() {
+    auto breakpoints = cmdExecutor->getBreakpoints();
+    ui->breakPointsDisplay->clear();
+    for(const auto& line: breakpoints) {
+        ui->breakPointsDisplay->append(QString("Breakpoint at: %1").arg(line));
+    }
+}
+void showBreakpoints() {
 
+}
 MainWindow::~MainWindow()
 {
     delete ui;
@@ -64,7 +105,15 @@ void MainWindow::on_cmdLineEdit_editingFinished()
     // TODO: support edit
     // ui->CodeDisplay->append(cmd);
     emit sendCommand(cmd);
-
+}
+void MainWindow::on_inputLineEdit_editingFinished()
+{
+    QString input = ui->inputLineEdit->text();
+    ui->inputLineEdit->setText("");
+    QString inputDisplay = "> " + input;
+    ui->textBrowser->append(inputDisplay);
+    ui->labelInputRequired->setVisible(false);
+    emit sendInput(input);
 }
 
 void MainWindow::setUIForDebugMode(){

@@ -27,6 +27,9 @@ public:
     void print() {
         symbol_table->printSymbols();
     }
+    auto getRepl() const {
+        return symbol_table->getRepl();
+    }
 
 };
 enum class ProgramMode {
@@ -43,15 +46,18 @@ using ProgramStatus = struct ProgramStatus {
     std::optional<std::string> err_msg;
     ProgramMode mode = ProgramMode::DEV;
     std::set<int> breakpoints;
-    void reset() {
-        // only clear current_line, next_line, running, err_msg, breakpoints
+    void reload() {
         current_line = -1;
         next_line = 0;
         running = false;
         err_msg = {};
+    }
+    void reset() {
+        reload();
         breakpoints.clear();
     }
     void add_breakpoint(int line) {
+        print("interpreter: add breakpoint: {}\n", line);
         breakpoints.insert(line);
     }
     void delete_breakpoint(int line) {
@@ -62,7 +68,7 @@ using ProgramStatus = struct ProgramStatus {
             }
         }
     }
-    bool break_at(int line_no) {
+    [[nodiscard]] bool break_at(int line_no) const {
         return breakpoints.contains(line_no);
     }
 
@@ -89,6 +95,7 @@ public slots:
     }
 signals:
     void inputReady();
+    void waitingForInput();
 public:
     explicit MockInputStream() = default;
     template<Streamable T>
@@ -96,6 +103,7 @@ public:
         QEventLoop loop;
         connect(this, &MockInputStream::inputReady, &loop, &QEventLoop::quit);
         waiting = true;
+        emit waitingForInput();
         loop.exec();
         {
             if(!inputs.empty()) {
@@ -167,6 +175,7 @@ private:
     ProgramStatus status{};
     MockInputStream inputStream{};
     MockOutputStream outputStream{};
+    MockOutputStream astStream{};
 public:
     explicit Interpreter(std::shared_ptr<Parser> p, std::shared_ptr<Env> e,
                          const ProgramMode mode = ProgramMode::DEV): parser(p), env(e) {
@@ -178,6 +187,9 @@ public:
     }
     [[nodiscard]] const MockOutputStream* getOutputStream() const {
         return &outputStream;
+    }
+    [[nodiscard]] const MockOutputStream *getASTStream() const {
+        return &astStream;
     }
     ~Interpreter() override = default;
     void interpret();
@@ -211,6 +223,14 @@ public:
             outputStream.output(output);
         }
     }
+    template<Streamable T>
+    void astOutput(T output) {
+        if(status.mode == ProgramMode::DEV) {
+        std::cout << output;
+        } else {
+        astStream.output(output);
+        }
+    }
     void visit(ASTNode *root) override;
     [[nodiscard]] std::shared_ptr<Parser> getParser() const {
         return parser;
@@ -221,14 +241,19 @@ public:
     [[nodiscard]] ProgramStatus getStatus() const {
         return status;
     }
-    void reset() {
+    void reset(bool status_reload = false) {
         // clear status
         // clear env
         // clear IO
-        status.reset();
+        if (status_reload) {
+            status.reload();
+        } else {
+            status.reset();
+        }
         env->symbol_table->clear();
         inputStream.clear();
         outputStream.clear();
+        astStream.clear();
     }
     void setMode(ProgramMode mode) {
         status.mode = mode;
@@ -237,7 +262,7 @@ public:
         status.current_file = std::move(file);
     }
     void loadFile(const std::filesystem::path &file, ProgramMode m = ProgramMode::DEV) {
-        reset();
+        reset(status.current_file == file);
         setFile(file);
         setMode(m);
         parser->reload(file);
@@ -253,14 +278,10 @@ public:
         }
         loadFile(status.current_file, status.mode);
     }
-    void switch2Dbg() {
+    void switchMode(ProgramMode m) {
         // 如果是自测，那debug模式还是自测
-        if(status.mode == ProgramMode::DEV) {
-            this->reset();
-            return;
-        }
-        this->reset();
-        status.mode = ProgramMode::DEBUG;
+        this->reset(true);
+        status.mode = m;
     }
     void addBreakpoint(int line) {
         status.add_breakpoint(line);

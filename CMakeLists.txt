@@ -5,9 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-
-set(CMAKE_PREFIX_PATH "/home/ayanami/Qt/6.8.0/gcc_64")
 set(EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_PREFIX_PATH "/home/ayanami/Qt/6.8.0/gcc_64")
+
 
 find_package(Qt6 COMPONENTS
         Core
@@ -29,6 +29,7 @@ add_executable(qbasic main.cpp
         interpreter.h
         mainwindow.h
         mainwindow.cpp
+        mainwindow.ui
         cmd_executor.cpp
         cmd_executor.h
 )

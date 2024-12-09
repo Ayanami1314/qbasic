@@ -21,9 +21,11 @@ public:
 
 signals:
     void sendCommand(QString cmd);    // send command to command receiver
+    void sendInput(QString input);    // send input to command receiver
 
 private slots:
     void on_cmdLineEdit_editingFinished();
+    void on_inputLineEdit_editingFinished();
     void clearAllDisplays() {
         ui->monitorDisplay->clear();
         ui->breakPointsDisplay->clear();
@@ -38,7 +40,8 @@ private:
     void setUIForDebugMode();
     void setUIExitDebugMode();
     void openFileDialog();
-
+    void showEnv();
+    void showBreakpoints();
 
 };
 #endif // MAINWINDOW_H

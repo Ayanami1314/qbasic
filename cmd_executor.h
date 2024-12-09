@@ -49,7 +49,7 @@ static inline QString cmd2Str(Command cmd) {
         return "UNKNOWN";
     }
 }
-static inline Command str2Cmd(const QString& cmd) {
+static inline Command str2Cmd(const std::string& cmd) {
     if(cmd == "LOAD") {
         return Command::LOAD;
     } else if(cmd == "RUN") {
@@ -62,9 +62,9 @@ static inline Command str2Cmd(const QString& cmd) {
         return Command::RESUME;
     } else if(cmd == "DEBUG") {
         return Command::DEBUG;
-    } else if(cmd == "ADD_BREAKPOINT") {
+    } else if(cmd == "ADD_BREAKPOINT" || cmd == "ADD") {
         return Command::ADD_BREAKPOINT;
-    } else if(cmd == "REMOVE_BREAKPOINT") {
+    } else if(cmd == "REMOVE_BREAKPOINT" || cmd == "REMOVE") {
         return Command::REMOVE_BREAKPOINT;
     } else if(cmd == "CHANGE_MODE") {
         return Command::CHANGE_MODE;
@@ -87,28 +87,34 @@ private:
 signals:
     void sendOutput(QString outputs);
     void sendError(QString error);
+    void sendAST(QString ast);
+    void waitingForInput();
+    void breakpointChanged();
 public slots:
     // cmd: split by space
     void receiveCmd(QString cmd) {
-        QStringList l = cmd.split(" ");
+        print("Receive command: {}\n", cmd.toStdString());
+        auto cmd_str = cmd.toStdString();
+        auto l = util::split_by_space(cmd_str);
+
         if(l.empty()) {
             print("Empty command\n");
             return;
         }
         auto cmdType = str2Cmd(l[0]);
         if(cmdType == Command::UNKNOWN) {
-            print("Unknown command: {}\n", l[0].toStdString());
+            print("Unknown command: {}\n", l[0]);
             return;
         }
-        l.pop_front();
+        l.erase(l.begin());
         std::vector<std::string> argv;
         for(const auto& s: l) {
-            argv.push_back(s.toStdString());
+            argv.push_back(s);
         }
         runCmd(cmdType, argv);
     }
-    void receiveInput(std::string input) {
-        interpreter->input(input);
+    void receiveInput(QString input) {
+        interpreter->input(input.toStdString());
     }
     void chooseFile(std::string file) {
         choosed_file = file;
@@ -119,7 +125,9 @@ public slots:
     void receiveError(std::string error) {
         emit sendError(QString::fromStdString(error));
     }
-
+    void receiveAST(std::string ast) {
+        emit sendAST(QString::fromStdString(ast));
+    }
 public:
     CmdExecutor() {
         tokenizer = std::make_shared<Token::Tokenizer>();
@@ -129,6 +137,10 @@ public:
         interpreter = std::make_shared<Interpreter>(parser, env);
         connect(interpreter->getOutputStream(), &MockOutputStream::sendOutput,
             this, &CmdExecutor::receiveOutput);
+        connect(interpreter->getASTStream(), &MockOutputStream::sendOutput,
+            this, &CmdExecutor::receiveAST);
+        connect(interpreter->getInputStream(), &MockInputStream::waitingForInput,
+            this, &CmdExecutor::waitingForInput);
     }
     ~CmdExecutor() override = default;
     std::string getChoosedFile() {
@@ -144,6 +156,19 @@ public:
     void handleCmdStop(const vector<std::string>& argv);
     void handleCmdAddBreakpoint(const vector<std::string>& argv);
     void handleCmdRemoveBreakpoint(const vector<std::string> &argv);
+    [[nodiscard]] std::shared_ptr<Env> getEnv() const {
+        return interpreter->getEnv();
+    }
+    [[nodiscard]] std::set<int> getBreakpoints() const {
+        return interpreter->getStatus().breakpoints;
+    }
+    [[nodiscard]] ProgramMode getMode() const {
+        return mode;
+    }
+    void setMode(ProgramMode m) {
+        mode = m;
+        interpreter->switchMode(m);
+    }
 };
 
 
