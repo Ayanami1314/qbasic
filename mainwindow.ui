@@ -26,9 +26,17 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
+
    <layout class="QHBoxLayout" name="horizontalLayout_3">
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QPushButton" name="btnHelp">
+        <property name="text">
+         <string>Help</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>

@@ -225,6 +225,9 @@ using BasicProgram = struct BasicProgram {
 static inline BasicProgram programFromlines(const std::vector<std::string>& lines) {
     BasicProgram p;
     for(const auto &l: lines) {
+        if(l.empty()) {
+            continue;
+        }
         auto line = linefromStr(l);
         p.lines[line.line_no] = line.line;
     }

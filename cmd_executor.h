@@ -64,7 +64,8 @@ static inline Command str2Cmd(const std::string& cmd) {
         return Command::DEBUG;
     } else if(cmd == "ADD_BREAKPOINT" || cmd == "ADD") {
         return Command::ADD_BREAKPOINT;
-    } else if(cmd == "REMOVE_BREAKPOINT" || cmd == "REMOVE") {
+    } else if(cmd == "REMOVE_BREAKPOINT" || cmd == "REMOVE" ||
+        cmd == "DEL" || cmd == "DELETE" || cmd == "DELETE_BREAKPOINT") {
         return Command::REMOVE_BREAKPOINT;
     } else if(cmd == "CHANGE_MODE") {
         return Command::CHANGE_MODE;

@@ -194,6 +194,10 @@ public:
     ~Interpreter() override = default;
     void interpret();
     void interpret_SingleStep();
+    // line: total line including line_no
+    void addLine(int line_no, string line) {
+
+    }
     void input(std::string var) {
         print("[DEBUG] input {}\n", var);
         if(status.mode == ProgramMode::DEV) {

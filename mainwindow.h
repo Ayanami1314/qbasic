@@ -4,7 +4,6 @@
 #include <QMainWindow>
 #include <QPointer>
 #include <ui_mainwindow.h>
-
 #include "cmd_executor.h"
 
 QT_BEGIN_NAMESPACE
@@ -34,6 +33,8 @@ private slots:
         ui->CodeDisplay->clear();
         ui->textBrowser->clear(); // 运行结果
     }
+    void openHelp();
+    void saveFile(QString filepath);
 private:
     Ui::MainWindow *ui;
 
@@ -42,6 +43,10 @@ private:
     void openFileDialog();
     void showEnv();
     void showBreakpoints();
-
+    void saveFile();
+    void showError(QString msg);
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
 };
+
 #endif // MAINWINDOW_H

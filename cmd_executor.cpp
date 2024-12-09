@@ -5,7 +5,8 @@
 #include "cmd_executor.h"
 
 void CmdExecutor::runCmd(Command cmd, const std::vector<std::string>& argv) {
-    switch (cmd) {
+    try {
+        switch (cmd) {
         case Command::CHANGE_MODE:
             handleCmdChangeMode(argv);
             break;
@@ -35,7 +36,12 @@ void CmdExecutor::runCmd(Command cmd, const std::vector<std::string>& argv) {
             break;
         default:
             throw std::runtime_error("Invalid command");
+        }
+    } catch (std::exception& e) {
+        print("Failed to run command: {}\n", e.what());
+        emit sendError(QString::fromStdString(e.what()));
     }
+
 }
 void CmdExecutor::handleCmdChangeMode(const vector<std::string>& argv) {
     if (argv.size() != 1) {

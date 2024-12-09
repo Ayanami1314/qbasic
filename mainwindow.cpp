@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QTimer>
+#include <QKeyEvent>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow) {
@@ -11,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->labelInputRequired->setVisible(false);
     setUIExitDebugMode();
     cmdExecutor = new CmdExecutor();
+
     connect(ui->btnDebugMode, &QPushButton::clicked, this, [this]() {
         setUIForDebugMode();
         cmdExecutor->setMode(ProgramMode::DEBUG);
@@ -19,7 +21,10 @@ MainWindow::MainWindow(QWidget *parent)
         setUIExitDebugMode();
         cmdExecutor->setMode(ProgramMode::NORMAL);
     });
-    connect(ui->btnClearCode, &QPushButton::clicked, this, &MainWindow::clearAllDisplays);
+    connect(ui->btnClearCode, &QPushButton::clicked, this, [this](){
+        clearAllDisplays();
+        cmdExecutor->runCmd(Command::CLEAR, {});
+    });
     connect(this, &MainWindow::sendCommand, cmdExecutor, &CmdExecutor::receiveCmd);
     connect(cmdExecutor, &CmdExecutor::sendOutput, ui->textBrowser, &QTextBrowser::append);
     // stderr = stdout
@@ -54,9 +59,10 @@ MainWindow::MainWindow(QWidget *parent)
         ui->labelInputRequired->setVisible(true);
     });
     connect(cmdExecutor, &CmdExecutor::sendError, [this](QString error){
-        QMessageBox::warning(this, tr("Error"), error);
+        showError(error);
     });
     connect(cmdExecutor, &CmdExecutor::breakpointChanged, this, &MainWindow::showBreakpoints);
+    connect(ui->btnHelp, &QPushButton::clicked, this, &MainWindow::openHelp);
 }
 void MainWindow::showEnv() {
     auto repl = cmdExecutor->getEnv()->getRepl();
@@ -65,6 +71,9 @@ void MainWindow::showEnv() {
         ui->monitorDisplay->append(QString::fromStdString(s));
     }
 }
+void MainWindow::showError(QString msg) {
+    QMessageBox::warning(this, tr("Error"), msg);
+}
 void MainWindow::showBreakpoints() {
     auto breakpoints = cmdExecutor->getBreakpoints();
     ui->breakPointsDisplay->clear();
@@ -72,8 +81,43 @@ void MainWindow::showBreakpoints() {
         ui->breakPointsDisplay->append(QString("Breakpoint at: %1").arg(line));
     }
 }
-void showBreakpoints() {
-
+void MainWindow::openHelp() {
+    QFile file("./assets/help-zh.md");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        QString helpContent = in.readAll();
+        QMessageBox::information(this, tr("Help"), helpContent);
+        file.close();
+    } else {
+        QMessageBox::warning(this, tr("Error"), tr("Cannot open help file"));
+    }
+}
+void MainWindow::keyPressEvent(QKeyEvent *event) {
+    if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_S) {
+        saveFile();
+    }
+}
+void MainWindow::saveFile(QString filepath) {
+    QFile file(filepath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << ui->CodeDisplay->toPlainText();
+        file.close();
+    } else {
+        QMessageBox::warning(this, tr("Error"), tr("Cannot save file"));
+    }
+}
+void MainWindow::saveFile() {
+    auto curFileName = cmdExecutor->getChoosedFile();
+    if(std::filesystem::exists(curFileName)) {
+        saveFile(QString::fromStdString(curFileName));
+        return;
+    }
+    // save as
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), "", tr("All Files (*)"));
+    if (!fileName.isEmpty()) {
+        saveFile(fileName);
+    }
 }
 MainWindow::~MainWindow()
 {
@@ -102,8 +146,56 @@ void MainWindow::on_cmdLineEdit_editingFinished()
 {
     QString cmd = ui->cmdLineEdit->text();
     ui->cmdLineEdit->setText("");
-    // TODO: support edit
-    // ui->CodeDisplay->append(cmd);
+    // built in cmd
+    if(cmd == "HELP") {
+        openHelp();
+        return;
+    }
+    if(cmd == "QUIT") {
+        close();
+        return;
+    }
+    // edit
+
+    int line_no;
+    try {
+        std::istringstream iss(cmd.toStdString());
+        iss >> line_no;
+        // line_no 开头，是编辑
+        if(line_no < 0) {
+            QMessageBox::warning(this, tr("Error"), tr("不能编辑负数行"));
+            return;
+        }
+        auto text = ui->CodeDisplay->toPlainText();
+        bool inserted = false;
+        QStringList lines = text.split("\n");
+
+        for(int i = 0; i < lines.size(); i++) {
+            int cur_line;
+            iss.clear();
+            iss.str(lines[i].toStdString());
+            iss >> cur_line;
+            if(cur_line > line_no) {
+                lines.insert(i, cmd);
+                inserted = true;
+                break;
+            }
+            if (cur_line == line_no) {
+                lines[i] = cmd;
+                inserted = true;
+                break;
+            }
+        }
+        if(!inserted) {
+            lines.append(cmd);
+        }
+        ui->CodeDisplay->setPlainText(lines.join("\n"));
+        return;
+    } catch (std::exception& e) {
+
+    }
+
+
     emit sendCommand(cmd);
 }
 void MainWindow::on_inputLineEdit_editingFinished()

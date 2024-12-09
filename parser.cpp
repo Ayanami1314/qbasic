@@ -245,7 +245,7 @@ void Parser::parseProgram() {
         } catch (std::exception& e) {
             print("Failed to parse line: {}, index {}\n", line_no, line_idx);
             print("Error: {}\n", e.what());
-            return;
+            throw std::runtime_error("Failed to parse line: " + std::to_string(line_no));
         }
     }
 }
