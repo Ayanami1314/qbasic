@@ -199,12 +199,19 @@ class TokenizerErr:public std::runtime_error {
 public:
     explicit TokenizerErr(const std::string& msg) : std::runtime_error(msg) {}
 };
-
+constexpr int MAX_LINE_NO = 1000000;
+static inline void checkValidLineNo(int line_no) {
+    if(line_no > 0 && line_no < MAX_LINE_NO) {
+        return;
+    }
+    throw TokenizerErr(fmt::format("Invalid line number: {}", line_no));
+}
 // throws: TokenizerErr
 static inline BasicProgramLine linefromStr(const std::string& str) {
     int line_no;
     std::istringstream iss(str);
     if(iss >> line_no) {
+        checkValidLineNo(line_no);
         std::string line;
         std::getline(iss, line);
         return {.line_no = line_no, .line=line};
