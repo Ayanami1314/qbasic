@@ -1,0 +1,92 @@
+1 LET 1
+    a 13
+    MOD
+        1000000
+        3
+2 PRINT 1
+    a
+3 LET 1
+    a 13
+    MOD
+        -1000000
+        3
+4 PRINT 1
+    a
+5 LET 1
+    a 13
+    MOD
+        1000000
+        -3
+6 PRINT 1
+    a
+7 LET 1
+    a 13
+    MOD
+        -1000000
+        -3
+8 PRINT 1
+    a
+9 IF THEN 0 1
+    a
+    >
+    0
+    18
+10 LET 1
+    a 13
+    MOD
+        9
+        3
+11 PRINT 1
+    a
+12 LET 1
+    a 13
+    MOD
+        -9
+        3
+13 PRINT 1
+    a
+14 LET 1
+    a 13
+    MOD
+        9
+        -3
+15 PRINT 1
+    a
+16 LET 1
+    a 13
+    MOD
+        -9
+        -3
+17 PRINT 1
+    a
+18 REM 1
+    This is a separator.
+19 LET 1
+    a 13
+    MOD
+        3
+        9
+20 PRINT 1
+    a
+21 LET 1
+    a 13
+    MOD
+        -3
+        9
+22 PRINT 1
+    a
+23 LET 1
+    a 13
+    MOD
+        3
+        -9
+24 PRINT 1
+    a
+25 LET 1
+    a 13
+    MOD
+        -3
+        -9
+26 PRINT 1
+    a
+27 END 1

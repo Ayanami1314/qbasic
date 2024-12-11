@@ -1,0 +1,44 @@
+1 REM 1
+    Program to sum 1 to a
+10 LET 1
+    a 31
+    10
+20 LET 1
+    b 31
+    -1
+30 IF THEN 1 10
+    a
+    <
+    1
+    60
+40 LET 10
+    b 31
+    +
+        b
+        a
+45 LET 10
+    a 31
+    -
+        a
+        1
+46 LET 10
+    b 31
+    +
+        1
+        *
+            b
+            2
+47 LET 10
+    b 31
+    /
+        -
+            b
+            1
+        2
+50 GOTO 10
+    30
+60 PRINT 1
+    +
+        b
+        1
+70 END 1

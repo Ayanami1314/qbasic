@@ -1,0 +1,62 @@
+3 REM 1
+    Given N, print the smallest X that 3**X-1 >= N
+9 INPUT 1
+    N
+16 LET 1
+    X 8
+    1
+17 LET 3
+    SUM 8
+    -
+        **
+            3
+            X
+        1
+18 IF THEN 0 3
+    SUM
+    <
+    0
+    2019
+20 IF THEN 1 2
+    SUM
+    >
+    N
+    11199
+22 IF THEN 0 2
+    SUM
+    =
+    N
+    11199
+25 LET 2
+    X 8
+    +
+        X
+        1
+44 LET 2
+    SUM 8
+    -
+        **
+            3
+            X
+        1
+50 GOTO 2
+    17
+2019 REM 0
+    This should never be executed.
+2020 PRINT 0
+    +
+        +
+            2020
+            -2
+        3
+2021 END 0
+11199 PRINT 1
+    -
+        /
+            +
+                *
+                    X
+                    3
+                6
+            3
+        2

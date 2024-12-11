@@ -1,0 +1,92 @@
+1 LET 1
+    a 13
+    MOD
+        19260817
+        7
+2 PRINT 1
+    a
+3 LET 1
+    a 13
+    MOD
+        -19260817
+        7
+4 PRINT 1
+    a
+5 LET 1
+    a 13
+    MOD
+        19260817
+        -7
+6 PRINT 1
+    a
+7 LET 1
+    a 13
+    MOD
+        -19260817
+        -7
+8 PRINT 1
+    a
+9 IF THEN 0 1
+    a
+    >
+    0
+    18
+10 LET 1
+    a 13
+    MOD
+        20
+        5
+11 PRINT 1
+    a
+12 LET 1
+    a 13
+    MOD
+        -20
+        5
+13 PRINT 1
+    a
+14 LET 1
+    a 13
+    MOD
+        20
+        -5
+15 PRINT 1
+    a
+16 LET 1
+    a 13
+    MOD
+        -20
+        -5
+17 PRINT 1
+    a
+18 REM 1
+    This is a separator.
+19 LET 1
+    a 13
+    MOD
+        5
+        20
+20 PRINT 1
+    a
+21 LET 1
+    a 13
+    MOD
+        -5
+        20
+22 PRINT 1
+    a
+23 LET 1
+    a 13
+    MOD
+        5
+        -20
+24 PRINT 1
+    a
+25 LET 1
+    a 13
+    MOD
+        -5
+        -20
+26 PRINT 1
+    a
+27 END 1

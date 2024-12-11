@@ -340,6 +340,8 @@ public:
             if(util::ConvAny<int>(left_v)) {
                 int left_i = std::any_cast<int>(left_v);
                 int right_i = std::any_cast<int>(right_v);
+                int bias;
+                int mod;
                 switch (node->getOp()) {
                 case Token::TokenType::OP_ADD:
                     result = left_i + right_i;
@@ -363,7 +365,18 @@ public:
                     // HINT: basic mod is different from cpp
                     // 5 % -3 = -1(basic, sign decided by b in a % b)
                     // 5 % -3 = 2(cpp)
-                    result = right_i > 0 ? left_i % right_i : ((left_i % right_i) + right_i);
+                    // ATTENTION:
+                    // in cpp, -10 % 3 = -1, instead of 2 in python and basic
+                    bias = std::abs(right_i);
+                    mod = left_i % right_i;
+                    if(mod > 0 && right_i < 0) {
+                        mod -= bias;
+                    }
+                    else if (mod < 0 && right_i > 0) {
+                        mod += bias;
+                    }
+                    result = mod;
+                    print("{} % {} = {}\n", left_i, right_i, std::any_cast<int>(result.value()));
                     break;
                 case Token::TokenType::OP_POW:
                     //

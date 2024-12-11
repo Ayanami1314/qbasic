@@ -1,0 +1,42 @@
+1 REM 1
+    Program to multiply 1 to a
+10 LET 1
+    a 16
+    5
+20 LET 1
+    b 16
+    1
+30 IF THEN 1 5
+    a
+    <
+    1
+    60
+40 LET 5
+    b 16
+    *
+        b
+        a
+45 LET 5
+    a 16
+    -
+        a
+        1
+46 LET 5
+    b 16
+    +
+        1
+        *
+            b
+            2
+47 LET 5
+    b 16
+    /
+        -
+            b
+            1
+        2
+50 GOTO 5
+    30
+60 PRINT 1
+    b
+70 END 1

@@ -1,0 +1,35 @@
+1 LET 1
+    a 902
+    100
+2 LET 1
+    b 902
+    10
+3 LET 1
+    c 1804
+    99
+4 LET 902
+    d 1803
+    -
+        *
+            a
+            b
+        c
+5 IF THEN 901 1
+    d
+    >
+    0
+    7
+6 GOTO 1
+    10
+7 PRINT 901
+    d
+8 LET 901
+    c 1804
+    +
+        c
+        1
+9 GOTO 901
+    4
+10 PRINT 1
+    c
+11 END 1

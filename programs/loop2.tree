@@ -1,0 +1,35 @@
+1 LET 1
+    a 92
+    50
+2 LET 1
+    b 92
+    2
+3 LET 1
+    c 184
+    9
+4 LET 92
+    d 183
+    -
+        *
+            a
+            b
+        c
+5 IF THEN 91 1
+    d
+    >
+    0
+    7
+6 GOTO 1
+    10
+7 PRINT 91
+    d
+8 LET 91
+    c 184
+    +
+        c
+        1
+9 GOTO 91
+    4
+10 PRINT 1
+    c
+11 END 1
