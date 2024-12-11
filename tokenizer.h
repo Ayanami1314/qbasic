@@ -254,7 +254,7 @@ private:
     std::vector<TokenLine> token_lines;
     const std::map<TokenType, std::regex> regex_table;
     BasicProgram src_program;
-    std::vector<Token> read_line(const std::string& line);
+    [[nodiscard]] std::vector<Token> read_line(const std::string& line) const;
     int line_offset; // multi line 的 offset
     int inline_offset; // single line 的 offset
 public:
@@ -262,6 +262,7 @@ public:
     ~Tokenizer() = default;
     void tokenize(BasicProgram&& program);
     void tokenize(const std::filesystem::path& file_path);
+    void read_anonymous_line(const std::string& line);
     void resetOff() {
         line_offset = 0;
         inline_offset = 0;

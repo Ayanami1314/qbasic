@@ -183,29 +183,6 @@ IFStmtNode* Parser::parseIFStmt() {
     return new IFStmtNode(expr_node, line_no);
 }
 
-void Parser::parseSingleLine() {
-    auto [line_no, tokens] = tokenizer->get_single_line();
-    tokenizer->set_line_offset(line_no);
-    tokenizer->set_inline_offset(0);
-    ASTNode* stmt = nullptr;
-    auto token = tokenizer->peek();
-    if(token.type == Token::TokenType::END) {
-        stmt = parseEndStmt();
-    } else if(token.type == Token::TokenType::PRINT) {
-        stmt = parsePrintStmt();
-    } else if(token.type == Token::TokenType::INPUT) {
-        stmt = parseInputStmt();
-    } else if(token.type == Token::TokenType::IF) {
-        stmt = parseIFStmt();
-    } else if(token.type == Token::TokenType::GOTO) {
-        stmt = parseGOTOStmt();
-    } else if(token.type == Token::TokenType::LET) {
-        stmt = parseAssignStmt();
-    } else {
-        stmt = parseAssignStmt(); // A = A + 1, eg
-    }
-    stmts[line_no] = stmt;
-}
 // program : (stmt*) eof
 // SHOULD BE reentrant
 void Parser::parseProgram() {
@@ -221,6 +198,8 @@ void Parser::parseProgram() {
         auto& [line_no, tokens] = token_lines[line_idx];
         // tokenizer->set_line_offset(line_idx);
         // tokenizer->set_inline_offset(0);
+        // ATTENTION: empty line should be filtered in tokenizer
+        // so there is no EOF check here
         ASTNode* stmt = nullptr;
         try {
             auto token = tokenizer->peek();

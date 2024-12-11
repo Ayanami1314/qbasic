@@ -62,7 +62,8 @@ void Interpreter::interpret() {
     for(const auto line: status.breakpoints) {
         print("Breakpoints: {}\n", line);
     }
-    while(status.running && !status.err_msg.has_value() && !status.break_at(status.current_line)) {
+    while(status.running && !status.err_msg.has_value() && status.next_line > 0 &&
+        !status.break_at(status.current_line)) {
         interpret_SingleStep();
         print("[DEBUG] Current line: {}\n", status.current_line);
         if(status.mode == ProgramMode::DEV || status.mode == ProgramMode::DEBUG) {

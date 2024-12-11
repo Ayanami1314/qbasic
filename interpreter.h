@@ -181,6 +181,7 @@ public:
                          const ProgramMode mode = ProgramMode::DEV): parser(p), env(e) {
         reset();
         status.mode = mode;
+
     };
     [[nodiscard]] const MockInputStream* getInputStream() const {
         return &inputStream;
@@ -254,10 +255,14 @@ public:
         } else {
             status.reset();
         }
-        env->symbol_table->clear();
+        if(env && env->symbol_table)
+            env->symbol_table->clear();
         inputStream.clear();
         outputStream.clear();
         astStream.clear();
+    }
+    void resetStatusOnly() {
+        status.reset();
     }
     void setMode(ProgramMode mode) {
         status.mode = mode;
@@ -615,9 +620,7 @@ public:
             output(fmt::format("{}", std::any_cast<string>(expr_v)));
         }
     }
+
 };
-
-
-
 
 #endif //INTREPRETER_H

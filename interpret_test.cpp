@@ -14,7 +14,7 @@ std::shared_ptr<Interpreter> buildInterpreter(const vector<string>& src) {
     auto test_tokenizer = std::make_shared<Token::Tokenizer>();;
     // auto tokenLines = test_tokenizer->read_lines(src);
     auto table = std::make_shared<SymbolTable>();
-    auto test_parser = std::make_shared<Parser>(test_tokenizer, table);
+    auto test_parser = std::make_shared<Parser>(test_tokenizer);
     // test_parser->parseProgram();
     auto env = std::make_shared<Env>(table);
     auto interpreter = std::make_shared<Interpreter>(test_parser, env, ProgramMode::DEV);
@@ -26,7 +26,7 @@ std::shared_ptr<Interpreter> buildInterpreter(const std::filesystem::path& fpath
     auto test_tokenizer = std::make_shared<Token::Tokenizer>();;
     // auto tokenLines = test_tokenizer->read_lines(src);
     auto table = std::make_shared<SymbolTable>();
-    auto test_parser = std::make_shared<Parser>(test_tokenizer, table);
+    auto test_parser = std::make_shared<Parser>(test_tokenizer);
     // test_parser->parseProgram();
     auto env = std::make_shared<Env>(table);
     auto interpreter = std::make_shared<Interpreter>(test_parser, env);

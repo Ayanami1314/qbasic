@@ -49,7 +49,7 @@ Tokenizer::Tokenizer() :regex_table(basic_language_regex_table){
     inline_offset = 0;
 }
 
-std::vector<Token> Tokenizer::read_line(const std::string &line) {
+std::vector<Token> Tokenizer::read_line(const std::string &line) const {
     std::vector<std::string> words = util::split_by_space(line);
     // HINT: regex_match只考虑完全匹配
     size_t offset = 0;
@@ -128,6 +128,20 @@ void Tokenizer::tokenize(const std::filesystem::path& file_path) {
     auto program = programFromlines(lines);
     this->tokenize(std::move(program));
     ifs.close();
+}
+// hint: line can be with or without line_no
+// should only be called by alone one line tokenizer
+void Tokenizer::read_anonymous_line(const std::string& line) {
+    std::string line_with_no = line;
+
+    std::istringstream iss(line);
+    int line_no;
+
+    iss >> line_no;
+    if (iss.fail()) {
+        line_with_no = "1 " + line;
+    }
+    return this->tokenize(programFromlines({line_with_no}));
 }
 std::vector<TokenLine> Tokenizer::read_lines(const std::vector<std::string>& lines) {
     BasicProgram p;

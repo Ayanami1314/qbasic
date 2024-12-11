@@ -18,8 +18,7 @@ void parser_test::testParseNum() {
     auto test_tokenizer = std::make_shared<Token::Tokenizer>();
     vector<string> lines = {"10 1", "20 2", "30 232378", "40 0", "50 123456789"};
     auto tokenLines = test_tokenizer->read_lines(lines);
-    auto test_table = std::make_shared<SymbolTable>();
-    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
+    auto test_parser = std::make_shared<Parser>(test_tokenizer);
     auto ref_nums = vector<int>{1, 2, 232378, 0, 123456789};
     for(int i=0; i<5; i++) {
         auto [lineNo, tokens] = tokenLines[i];
@@ -46,7 +45,7 @@ void parser_test::testParseOp() {
     auto test_tokenizer = std::make_shared<Token::Tokenizer>();
     auto tokenLines = test_tokenizer->read_lines(lines);
     auto test_table = std::make_shared<SymbolTable>();
-    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
+    auto test_parser = std::make_shared<Parser>(test_tokenizer);
     auto expr_1 = test_parser->expr();
     string what = "get type " + ast2Str(expr_1->type());
     QVERIFY2(expr_1->type() == ASTNodeType::BinOp, what.c_str());
@@ -139,7 +138,7 @@ void parser_test::testParseAssign() {
     auto test_tokenizer = std::make_shared<Token::Tokenizer>();
     auto tokenLines = test_tokenizer->read_lines(lines);
     auto test_table = std::make_shared<SymbolTable>();
-    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
+    auto test_parser = std::make_shared<Parser>(test_tokenizer);
     for (int i=0; i<5; i++) {
         auto node = test_parser->parseAssignStmt();
         test_parser->printAST(node);
@@ -162,7 +161,7 @@ void parser_test::testParseIfAndGoto() {
     auto test_tokenizer = std::make_shared<Token::Tokenizer>();
     auto tokenLines = test_tokenizer->read_lines(lines);
     auto test_table = std::make_shared<SymbolTable>();
-    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
+    auto test_parser = std::make_shared<Parser>(test_tokenizer);
     test_parser->parseProgram();
     auto stmts = test_parser->getStmts();
     QVERIFY2(stmts.size() == 10, "Failed to parse program");
@@ -200,7 +199,7 @@ void parser_test::testIO() {
     auto test_tokenizer = std::make_shared<Token::Tokenizer>();
     auto tokenLines = test_tokenizer->read_lines(lines);
     auto test_table = std::make_shared<SymbolTable>();
-    auto test_parser = std::make_shared<Parser>(test_tokenizer, test_table);
+    auto test_parser = std::make_shared<Parser>(test_tokenizer);
 
     test_parser->parseProgram();
     auto stmts = test_parser->getStmts();

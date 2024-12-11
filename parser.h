@@ -574,11 +574,10 @@ public:
 class Parser {
 private:
     std::shared_ptr<Token::Tokenizer> tokenizer;
-    std::shared_ptr<SymbolTable> sym_table;
     std::map<int, ASTNode*> stmts; // based on line_no
 public:
-    explicit Parser(std::shared_ptr<Token::Tokenizer> tokenizer,  std::shared_ptr<SymbolTable> table):
-    tokenizer(tokenizer), sym_table(table) {
+    explicit Parser(std::shared_ptr<Token::Tokenizer> tokenizer):
+    tokenizer(tokenizer) {
         // copy(+ref count)
     }
 
@@ -598,7 +597,9 @@ public:
     InputStmtNode* parseInputStmt();
     IFStmtNode* parseIFStmt();
     void parseProgram();
-    void parseSingleLine();
+    [[nodiscard]] std::shared_ptr<Token::Tokenizer> getTokenizer() const {
+        return tokenizer;
+    }
     [[nodiscard]] auto getSortedSrc() const {
         return tokenizer->getSortedSrc();
     }
@@ -615,20 +616,19 @@ public:
     void reload(const std::filesystem::path& path) {
         stmts.clear();
         tokenizer->reload(path);
-        sym_table->clear();
         this->parseProgram();
+    }
+    void clear() {
+        stmts.clear();
+        tokenizer->resetAll();
     }
     void reload(Token::BasicProgram&& program) {
         stmts.clear();
         tokenizer->reload(std::move(program));
-        sym_table->clear();
         this->parseProgram();
     }
     [[nodiscard]] vector<string> getTabbedAST(int line_no) const {
         return stmts.at(line_no)->toTabbedString();
     }
 };
-
-
-
 #endif //PARSER_H

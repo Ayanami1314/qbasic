@@ -93,6 +93,7 @@ void CmdExecutor::handleCmdRun(const vector<std::string>& argv) {
 }
 void CmdExecutor::handleCmdClear(const vector<std::string>& argv) {
     interpreter->reset();
+    oneLineInterpreter->reset();
     // clear ui
 }
 void CmdExecutor::handleCmdResume(const vector<std::string>& argv) {

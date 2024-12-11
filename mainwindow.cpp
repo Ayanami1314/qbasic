@@ -168,6 +168,13 @@ void MainWindow::on_cmdLineEdit_editingFinished()
     try {
         std::istringstream iss(cmd.toStdString());
         iss >> line_no;
+        if (iss.fail()) {
+            // not a number
+            print("send cmd: {}\n", cmd.toStdString());
+            emit sendCommand(cmd);
+            return;
+        }
+        print("cmd insert line: {}\n", line_no);
         // line_no 开头，是编辑
         if(line_no < 0) {
             QMessageBox::warning(this, tr("Error"), tr("不能编辑负数行"));
@@ -202,7 +209,7 @@ void MainWindow::on_cmdLineEdit_editingFinished()
 
     }
 
-
+    print("send cmd: {}\n", cmd.toStdString());
     emit sendCommand(cmd);
 }
 
