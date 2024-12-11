@@ -166,6 +166,9 @@ public:
     [[nodiscard]] ProgramMode getMode() const {
         return mode;
     }
+    [[nodiscard]] std::shared_ptr<Interpreter> getInterpreter() const {
+        return interpreter;
+    }
     void setMode(ProgramMode m) {
         mode = m;
         interpreter->switchMode(m);

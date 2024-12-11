@@ -269,6 +269,7 @@ public:
     [[nodiscard]] auto get_single_line() const { return token_lines[line_offset]; }
     [[nodiscard]] Token peek() const;
     [[nodiscard]] Token prev() const;
+    [[nodiscard]] BasicProgram getSortedSrc() const { return src_program; }
     Token eat(TokenType tk);
     [[nodiscard]] int get_line_offset() const {
         return line_offset;

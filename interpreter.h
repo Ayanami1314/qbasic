@@ -293,6 +293,9 @@ public:
     void deleteBreakpoint(int line) {
         status.delete_breakpoint(line);
     }
+    [[nodiscard]] auto getSortedSrc() const {
+        return parser->getSortedSrc();
+    }
 
     /*
      * 从ASTNode中获取值

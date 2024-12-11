@@ -599,6 +599,9 @@ public:
     IFStmtNode* parseIFStmt();
     void parseProgram();
     void parseSingleLine();
+    [[nodiscard]] auto getSortedSrc() const {
+        return tokenizer->getSortedSrc();
+    }
     [[nodiscard]] auto getStmts() {
         return stmts;
     }

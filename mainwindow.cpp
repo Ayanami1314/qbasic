@@ -132,11 +132,18 @@ void MainWindow::openFileDialog() {
 
         QFile file(fileName);
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&file);
-            QString fileContent = in.readAll();
-            ui->CodeDisplay->setPlainText(fileContent);
-            file.close();
+            // QTextStream in(&file);
+            // QString fileContent = in.readAll();
+            // ui->CodeDisplay->setPlainText(fileContent);
+            // file.close();
+            // MAKE DOC HAPPY
             cmdExecutor->runCmd(Command::LOAD, {fileName.toStdString()});
+            auto sortedSrc = cmdExecutor->getInterpreter()->getSortedSrc();
+            QString code;
+            for(const auto&[line_no, line]: sortedSrc.lines) {
+                code += QString::number(line_no) + " " + QString::fromStdString(line) + "\n";
+            }
+            ui->CodeDisplay->setPlainText(code);
         } else {
             QMessageBox::warning(this, tr("Error"), tr("Cannot open file"));
         }
