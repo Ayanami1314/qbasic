@@ -620,6 +620,9 @@ public:
             output(fmt::format("{}", std::any_cast<string>(expr_v)));
         }
     }
+    void visit_RemStmtNode(RemStmtNode* node) {
+        // do nothing
+    }
 
 };
 

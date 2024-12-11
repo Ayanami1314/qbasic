@@ -65,6 +65,11 @@ std::vector<Token> Tokenizer::read_line(const std::string &line) const {
             // 只匹配相同开头(position == 0)的,
             if(!m.empty() && m.position(0) == 0) {
                 if (tk_type == TokenType::REM) {
+                    // return tokens;
+                    // lab doc says rem should be a stmt, make it happy
+                    tokens.push_back({TokenType::REM, ""});
+                    offset += m.length(0); // += rem length
+                    tokens.push_back({TokenType::LITERAL, line.substr(offset)});
                     return tokens;
                 }
                 if(tk_type == TokenType::OP_EQ || tk_type == TokenType::ASSIGN) {

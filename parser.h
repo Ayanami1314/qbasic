@@ -107,6 +107,7 @@ enum class ASTNodeType {
     PrintStmt,
     InputStmt,
     IFStmt,
+    RemStmt,
     NoOp,
 };
 inline string ast2Str(ASTNodeType type) {
@@ -274,6 +275,10 @@ public:
             throw std::runtime_error("BinOpNode: Invalid binary operator");
         }
     }
+    ~BinOpNode() override {
+        delete left;
+        delete right;
+    }
     // getter setter
     ASTNode* getLeft() {
         return left;
@@ -322,6 +327,9 @@ public:
             auto s = fmt::format("UnaryOpNode: Invalid unary operator {}", tk2Str(op));
             throw std::runtime_error(s);
         }
+    }
+    ~UnaryOpNode() override {
+            delete expr;
     }
     string toString() override {
             return fmt::format("UnaryOpNode: {}{}", tk2Str(op), expr->toString());
@@ -387,7 +395,10 @@ private:
     ASTNode* right;
 public:
     AssignStmtNode(VarNode* left, ASTNode* right): left(left), right(right){}
-    ~AssignStmtNode() override = default;
+    ~AssignStmtNode() override {
+        delete left;
+        delete right;
+    }
     ASTNodeType type() override {
         return ASTNodeType::AssignStmt;
     }
@@ -467,13 +478,15 @@ class PrintStmtNode: public ASTNode {
     ASTNode* expr;
 public:
     explicit PrintStmtNode(ASTNode* expr): expr(expr) {}
+    ~PrintStmtNode() override {
+        delete expr;
+    }
     ASTNodeType type() override {
         return ASTNodeType::PrintStmt;
     }
     string toString() override {
             return fmt::format("PrintStmtNode: PRINT {}", expr->toString());
     }
-    ~PrintStmtNode() override = default;
     // getter setter
     ASTNode* getExpr() {
             return expr;
@@ -497,7 +510,9 @@ class InputStmtNode: public ASTNode {
     VarNode* var;
 public:
     explicit InputStmtNode(VarNode* v): var(v) {}
-    ~InputStmtNode() override = default;
+    ~InputStmtNode() override {
+        delete var;
+    }
     string toString() override {
             return fmt::format("InputStmtNode: INPUT {}", var->toString());
     }
@@ -529,7 +544,9 @@ private:
     int next_if_match = -1;
 public:
     explicit IFStmtNode(ASTNode* expr, int next): cond(expr) , next_if_match(next) {};
-    ~IFStmtNode() override = default;
+    ~IFStmtNode() override {
+        delete cond;
+    }
     string toString() override {
             return fmt::format("IFStmtNode: IF {} THEN {}", cond->toString(), next_if_match);
     }
@@ -561,6 +578,22 @@ public:
         return res;
     }
 };
+class RemStmtNode: public ASTNode {
+    string comment;
+public:
+    explicit RemStmtNode(string c): comment(std::move(c)) {}
+    ASTNodeType type() override {
+        return ASTNodeType::RemStmt;
+    }
+    string toString() override {
+            return fmt::format("REM: {}", comment);
+    }
+    vector<string> toTabbedString() override {
+        vector<string> res{"REM", "\t"+comment};
+        return res;
+    }
+};
+
 inline bool belongsDataNode(ASTNodeType type) {
     return type == ASTNodeType::Num || type == ASTNodeType::String |
         type == ASTNodeType::Var | type == ASTNodeType::Data;
@@ -580,7 +613,11 @@ public:
     tokenizer(tokenizer) {
         // copy(+ref count)
     }
-
+    ~Parser() {
+        for (auto& [line_no, stmt]: stmts) {
+            delete stmt;
+        }
+    }
     NumNode* parseNum();
     StringNode* parseString();
     ASTNode* factor();
@@ -596,6 +633,7 @@ public:
     PrintStmtNode* parsePrintStmt();
     InputStmtNode* parseInputStmt();
     IFStmtNode* parseIFStmt();
+    RemStmtNode* parseRemStmt();
     void parseProgram();
     [[nodiscard]] std::shared_ptr<Token::Tokenizer> getTokenizer() const {
         return tokenizer;
@@ -608,7 +646,7 @@ public:
     }
     void printAST(int line_no) const;
     void printAST(ASTNode* root) const;
-    ~Parser() = default;
+
     /**
      * 重新加载程序, 重新解析
      * @param path

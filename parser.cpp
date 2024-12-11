@@ -182,6 +182,13 @@ IFStmtNode* Parser::parseIFStmt() {
     int line_no = num_node->getInt();
     return new IFStmtNode(expr_node, line_no);
 }
+// REM comment
+RemStmtNode* Parser::parseRemStmt() {
+    tokenizer->eat(Token::TokenType::REM);
+    auto token = tokenizer->peek();
+    tokenizer->eat(Token::TokenType::LITERAL);
+    return new RemStmtNode(token.value.value());
+}
 
 // program : (stmt*) eof
 // SHOULD BE reentrant
@@ -217,6 +224,8 @@ void Parser::parseProgram() {
                 stmt = parseAssignStmt();
             } else if(token.type == Token::TokenType::VAR){
                 stmt = parseAssignStmt(); // A = A + 1, eg
+            } else if (token.type == Token::TokenType::REM) {
+                stmt = parseRemStmt();
             } else {
                 stmt = expr();
             }

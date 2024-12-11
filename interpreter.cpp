@@ -32,11 +32,14 @@ void Interpreter::visit(ASTNode *root) {
         return visit_InputStmtNode(dynamic_cast<InputStmtNode *>(root));
     case ASTNodeType::IFStmt:
         return visit_IFStmtNode(dynamic_cast<IFStmtNode *>(root));
+    case ASTNodeType::RemStmt:
+        return visit_RemStmtNode(dynamic_cast<RemStmtNode *>(root));
     // expr op
     case ASTNodeType::UnaryOp:
         return visit_UnaryOp(dynamic_cast<UnaryOpNode *>(root));
     case ASTNodeType::BinOp:
         return visit_BinOp(dynamic_cast<BinOpNode *>(root));
+
     default:
         string s = fmt::format("Invalid visit node type. visit: {}\n", ast2Str(root->type()));
         throw std::runtime_error(s);
