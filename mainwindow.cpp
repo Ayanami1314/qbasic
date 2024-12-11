@@ -205,11 +205,13 @@ void MainWindow::on_cmdLineEdit_editingFinished()
 
     emit sendCommand(cmd);
 }
+
 void MainWindow::on_inputLineEdit_editingFinished()
 {
+    static const QString input_hint = "?"; // used to be ">";
     QString input = ui->inputLineEdit->text();
     ui->inputLineEdit->setText("");
-    QString inputDisplay = "> " + input;
+    QString inputDisplay = input_hint + " " + input;
     ui->textBrowser->append(inputDisplay);
     ui->labelInputRequired->setVisible(false);
     emit sendInput(input);
