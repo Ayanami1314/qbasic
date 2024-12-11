@@ -14,13 +14,12 @@
 #include <set>
 namespace Token {
 enum class TokenType {
-
-    OP_EQ,
     OP_GE,
     OP_LE, // GE, LE > GT, LT
     OP_GT,
     OP_LT,
     OP_NE,
+    OP_EQ, // '=' EQ < '!=', '<=', '>='
 
     OP_POW,
 
@@ -117,7 +116,16 @@ inline bool isRightAssociative(TokenType tk) {
             return false;
     }
 }
-
+inline bool isOperand(TokenType tk) {
+    switch (tk) {
+    case TokenType::NUM:
+    case TokenType::VAR:
+    case TokenType::LITERAL:
+        return true;
+    default:
+        return false;
+    }
+}
 inline bool isUnaryOp(TokenType tk) {
     switch (tk) {
         case TokenType::OP_ADD:

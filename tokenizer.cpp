@@ -19,7 +19,7 @@ const std::map<TokenType, std::regex> basic_language_regex_table = {
         {TokenType::OP_LE, std::regex(R"(<=)")},
         {TokenType::OP_GT, std::regex(R"(>)")},
         {TokenType::OP_LT, std::regex(R"(<)")},
-        {TokenType::OP_EQ, std::regex(R"(==)")},
+        {TokenType::OP_EQ, std::regex(R"(=)")}, // changed this from == to =
         {TokenType::OP_NE, std::regex(R"(\!=)")},
         {TokenType::OP_POW, std::regex(R"(\*\*)")},
         {TokenType::OP_ADD, std::regex(R"(\+)")},
@@ -67,7 +67,18 @@ std::vector<Token> Tokenizer::read_line(const std::string &line) {
                 if (tk_type == TokenType::REM) {
                     return tokens;
                 }
-                if(tk_type != TokenType::SPACE) {
+                if(tk_type == TokenType::OP_EQ || tk_type == TokenType::ASSIGN) {
+                    auto first = tokens.empty() ? TokenType::UNKNOWN: tokens.front().type;
+                    // ATTENTION: change == to = make OP_EQ can't be used in expr
+                    // Just make lab doc happy
+                    if(first == TokenType::IF) {
+                        fmt::print("found token: {}, {}\n", m[0].str(), tk2Str(tk_type));
+                        tokens.push_back({TokenType::OP_EQ, "="});
+                    } else {
+                        fmt::print("found token: {}, {}\n", m[0].str(), tk2Str(tk_type));
+                        tokens.push_back({TokenType::ASSIGN, "="});
+                    }
+                } else if(tk_type != TokenType::SPACE) {
                     fmt::print("found token: {}\n", m[0].str());
                     tokens.push_back({tk_type, m[0].str()});
                 }
