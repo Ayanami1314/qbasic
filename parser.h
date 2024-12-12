@@ -59,8 +59,9 @@ public:
     }
     // TODO: support types
     // 没有反射的丑态, 只能自己做个简易版本
-    // 目前只支持int string
+    // 目前只支持int string double
     void printSymbols() {
+
         for(const auto& [key, value]: symbols) {
             if(util::ConvAny<int>(value)) {
                 print("key: {}, value: {}\n", key, std::any_cast<int>(value));

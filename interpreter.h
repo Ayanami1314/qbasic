@@ -18,6 +18,151 @@ using std::map;
 using std::unordered_map;
 
 
+template<typename T>
+concept Arithmetic = std::is_arithmetic_v<T>;
+template<typename T>
+T doBinOp(T left, T right, Token::TokenType op);
+template<typename T>
+T doUnaryOp(T expr, Token::TokenType op);
+
+template <Arithmetic T>
+T doBinOp(T left, T right, Token::TokenType op) {
+    Arithmetic auto bias = 0;
+    Arithmetic auto mod = 0;
+    if constexpr ( std::is_integral_v<T> ) {
+        if (op == Token::TokenType::OP_MOD) {
+            if (right == 0) {
+                throw std::runtime_error("MOD by zero");
+            }
+            // HINT: basic mod is different from cpp
+            // 5 % -3 = -1(basic, sign decided by b in a % b)
+            // 5 % -3 = 2(cpp)
+            // ATTENTION:
+            // in cpp, -10 % 3 = -1, instead of 2 in python and basic
+            bias = std::abs(right);
+            mod = left % right;
+            if(mod > 0 && right < 0) {
+                mod -= bias;
+            }
+            else if (mod < 0 && right > 0) {
+                mod += bias;
+            }
+            return mod;
+        }
+    }
+
+    switch (op) {
+        case Token::TokenType::OP_ADD:
+            return left + right;
+        case Token::TokenType::OP_SUB:
+            return left - right;
+        case Token::TokenType::OP_MUL:
+            return left * right;
+        case Token::TokenType::OP_DIV:
+            if (right == 0) {
+                throw std::runtime_error("Division by zero");
+            }
+            return left / right;
+
+        case Token::TokenType::OP_POW:
+            return static_cast<T>(std::pow(left, right));
+        case Token::TokenType::OP_GT:
+            return left > right ? 1 : 0;
+        case Token::TokenType::OP_LT:
+            return left < right ? 1 : 0;
+        case Token::TokenType::OP_GE:
+            return left >= right ? 1 : 0;
+        case Token::TokenType::OP_LE:
+            return left <= right ? 1 : 0;
+        case Token::TokenType::OP_EQ:
+            return left == right ? 1 : 0;
+        case Token::TokenType::OP_NE:
+            return left != right ? 1 : 0;
+        default:
+            throw std::runtime_error(fmt::format("Invalid binary operator {}", tk2Str(op)));
+    }
+}
+
+template <Arithmetic T>
+T doUnaryOp(T expr, Token::TokenType op) {
+    switch (op) {
+        case Token::TokenType::OP_ADD:
+            return expr;
+        case Token::TokenType::OP_SUB:
+            return -expr;
+        default:
+            throw std::runtime_error(fmt::format("Invalid unary operator {}", tk2Str(op)));
+    }
+}
+template<typename T>
+concept String = std::is_same_v<std::remove_cv<T>, std::string>;
+
+template<typename T>
+concept BasicData = Arithmetic<T> || String<T>;
+
+
+
+template<String T>
+T doBinOp(T left, T right, Token::TokenType op) {
+    switch (op) {
+        case Token::TokenType::OP_ADD:
+            return left + right;
+        case Token::TokenType::OP_GT:
+            return left > right ? 1 : 0;
+        case Token::TokenType::OP_LT:
+            return left < right ? 1 : 0;
+        case Token::TokenType::OP_GE:
+            return left >= right ? 1 : 0;
+        case Token::TokenType::OP_LE:
+            return left <= right ? 1 : 0;
+        case Token::TokenType::OP_EQ:
+            return left == right ? 1 : 0;
+        case Token::TokenType::OP_NE:
+            return left != right ? 1 : 0;
+        default:
+            throw std::runtime_error(fmt::format("Invalid binary operator {}", tk2Str(op)));
+    }
+}
+
+template<typename T>
+T evalBinWithAny(std::any& left, std::any& right, Token::TokenType op) {
+    if(left.type() != right.type()) {
+        const string msg = fmt::format("evalWithAny: type unmatched: {} and {}",
+                                       left.type().name(), right.type().name());
+        throw std::runtime_error(msg);
+    }
+    if(!util::ConvAny<T>(left)) {
+        const string msg = fmt::format("evalWithAny: operand type {} unmatched with specified type {}"
+                                       , left.type().name(), typeid(T).name());
+        throw std::runtime_error(msg);
+    }
+    if constexpr ( BasicData<T> ) {
+        T l = std::any_cast<T>(left);
+        T r = std::any_cast<T>(right);
+        return doBinOp<T>(l, r, op);
+    } else {
+        const string msg = fmt::format("evalWithAny: Unsupport type {}", typeid(T).name());
+        throw std::runtime_error(msg);
+    }
+}
+template<typename T>
+T evalUnaryWithAny(std::any& expr, Token::TokenType op) {
+    if(!util::ConvAny<T>(expr)) {
+            const string msg = fmt::format("evalUnaryWithAny: operand type {} unmatched with specified type {}"
+                                       , expr.type().name(), typeid(T).name());
+            throw std::runtime_error(msg);
+    }
+    if constexpr ( BasicData<T> ) {
+        T v = std::any_cast<T>(expr);
+        return doUnaryOp<T>(v, op);
+    } else {
+            const string msg = fmt::format("evalUnaryWithAny: Unsupport type {}", typeid(T).name());
+            throw std::runtime_error(msg);
+    }
+}
+
+
+
 class Env {
 public:
     std::shared_ptr<SymbolTable> symbol_table {};
@@ -339,158 +484,20 @@ public:
         auto left_v = getNodeVal<std::any>(left_node);
         auto right_v = getNodeVal<std::any>(right_node);
         std::optional<std::any> result;
-        // HINT: 不尝试做类型转换，直接报错
-        if(left_v.type() != right_v.type()) {
-            throw std::runtime_error("BinOpNode: value type Unmatched");
+        if (left_v.type() != right_v.type()) {
+            const string msg = fmt::format("BinOpNode: type unmatched: {} and {}",
+                                           left_v.type().name(), right_v.type().name());
+            throw std::runtime_error(msg);
         }
-        // print("value type: {}\n",left_v.type().name());
-        if(left_v.type() == typeid(int) || left_v.type() == typeid(double)) {
-            if(util::ConvAny<int>(left_v)) {
-                int left_i = std::any_cast<int>(left_v);
-                int right_i = std::any_cast<int>(right_v);
-                int bias;
-                int mod;
-                switch (node->getOp()) {
-                case Token::TokenType::OP_ADD:
-                    result = left_i + right_i;
-                    break;
-                case Token::TokenType::OP_SUB:
-                    result = left_i - right_i;
-                    break;
-                case Token::TokenType::OP_MUL:
-                    result = left_i * right_i;
-                    break;
-                case Token::TokenType::OP_DIV:
-                    if (right_i == 0) {
-                        throw std::runtime_error("BinOpNode: Division by zero");
-                    }
-                    result = left_i / right_i;
-                    break;
-                case Token::TokenType::OP_MOD:
-                    if (right_i == 0) {
-                        throw std::runtime_error("BinOpNode: MOD by zero");
-                    }
-                    // HINT: basic mod is different from cpp
-                    // 5 % -3 = -1(basic, sign decided by b in a % b)
-                    // 5 % -3 = 2(cpp)
-                    // ATTENTION:
-                    // in cpp, -10 % 3 = -1, instead of 2 in python and basic
-                    bias = std::abs(right_i);
-                    mod = left_i % right_i;
-                    if(mod > 0 && right_i < 0) {
-                        mod -= bias;
-                    }
-                    else if (mod < 0 && right_i > 0) {
-                        mod += bias;
-                    }
-                    result = mod;
-                    print("{} % {} = {}\n", left_i, right_i, std::any_cast<int>(result.value()));
-                    break;
-                case Token::TokenType::OP_POW:
-                    //
-                    result = static_cast<int>(std::pow(left_i, right_i));
-                    break;
-                case Token::TokenType::OP_GT:
-                    result = left_i > right_i ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_LT:
-                    result = left_i < right_i ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_GE:
-                    result = left_i >= right_i ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_LE:
-                    result = left_i <= right_i ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_EQ:
-                    result = left_i == right_i ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_NE:
-                    result = left_i != right_i ? 1 : 0;
-                    break;
-                default:
-                    throw std::runtime_error(fmt::format("BinOpNode Add: Invalid binary operator {}",
-                    tk2Str(node->getOp())));
-                }
-            } else if (util::ConvAny<double>(left_v)) {
-                double left_d = std::any_cast<double>(left_v);
-                double right_d = std::any_cast<double>(right_v);
-                switch (node->getOp()) {
-                case Token::TokenType::OP_ADD:
-                    result = left_d + right_d;
-                    break;
-                case Token::TokenType::OP_SUB:
-                    result = left_d - right_d;
-                    break;
-                case Token::TokenType::OP_MUL:
-                    result = left_d * right_d;
-                    break;
-                case Token::TokenType::OP_DIV:
-                    if (right_d == 0) {
-                        throw std::runtime_error("BinOpNode: Division by zero");
-                    }
-                    result = left_d / right_d;
-                    break;
-                case Token::TokenType::OP_POW:
-                    result = std::pow(left_d, right_d);
-                    break;
-                case Token::TokenType::OP_GT:
-                    result = left_d > right_d ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_LT:
-                    result = left_d < right_d ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_GE:
-                    result = left_d >= right_d ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_LE:
-                    result = left_d <= right_d ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_EQ:
-                    result = left_d == right_d ? 1 : 0;
-                    break;
-                case Token::TokenType::OP_NE:
-                    result = left_d != right_d ? 1 : 0;
-                    break;
-                default:
-                    auto s = fmt::format("BinOpNode Add: Invalid binary operator {}",
-                        tk2Str(node->getOp()));
-                    throw std::runtime_error(s);
-                }
-            }
-        }
-        if(left_v.type() == typeid(string)) {
-            switch (node->getOp()) {
-            case Token::TokenType::OP_ADD:
-                result = std::any_cast<string>(left_v) + std::any_cast<string>(right_v);
-                break;
-            case Token::TokenType::OP_GT:
-                result = std::any_cast<string>(left_v) > std::any_cast<string>(right_v) ? 1 : 0;
-                break;
-            case Token::TokenType::OP_LT:
-                result = std::any_cast<string>(left_v) < std::any_cast<string>(right_v) ? 1 : 0;
-                break;
-            case Token::TokenType::OP_GE:
-                result = std::any_cast<string>(left_v) >= std::any_cast<string>(right_v) ? 1 : 0;
-                break;
-            case Token::TokenType::OP_LE:
-                result = std::any_cast<string>(left_v) <= std::any_cast<string>(right_v) ? 1 : 0;
-                break;
-            case Token::TokenType::OP_EQ:
-                result = std::any_cast<string>(left_v) == std::any_cast<string>(right_v) ? 1 : 0;
-                break;
-            case Token::TokenType::OP_NE:
-                result = std::any_cast<string>(left_v) != std::any_cast<string>(right_v) ? 1 : 0;
-                break;
-            default:
-                string s = fmt::format("BinOpNode Add: Invalid binary operator {}",
-                tk2Str(node->getOp()));
-                throw std::runtime_error(s);
-            }
-        }
-        if (!result.has_value()) {
-            string s = fmt::format("BinOpNode: Invalid value type {}", ast2Str(node->type()));
-            throw std::runtime_error(s);
+        if(util::ConvAny<int>(left_v)) {
+            result = evalBinWithAny<int>(left_v, right_v, node->getOp());
+        } else if(util::ConvAny<double>(left_v)) {
+            result = evalBinWithAny<double>(left_v, right_v, node->getOp());
+        } else if(util::ConvAny<std::string>(left_v)) {
+            result = evalBinWithAny<std::string>(left_v, right_v, node->getOp());
+        } else {
+            const string msg = fmt::format("BinOpNode: Invalid value type {}", ast2Str(node->type()));
+            throw std::runtime_error(msg);
         }
         node->setValue(result.value());
     }
@@ -499,25 +506,16 @@ public:
         auto expr_node = node->getExpr();
         visit(expr_node);
         auto expr_v = getNodeVal<std::any>(expr_node);
-        if(op == Token::TokenType::OP_ADD) {
-            node->setValue(expr_v);
-            return;
-        }
-        if (op == Token::TokenType::OP_SUB) {
-            if(expr_v.type() == typeid(int)) {
-                node->setValue(-std::any_cast<int>(expr_v));
-                return;
-            }
-            if(expr_v.type() == typeid(double)) {
-                node->setValue(-std::any_cast<double>(expr_v));
-                return;
-            }
-            string s = fmt::format("UnaryOpNode: Invalid value type {}", ast2Str(node->type()));
+        std::optional<std::any> result;
+        if(util::ConvAny<int>(expr_v)) {
+            result = evalUnaryWithAny<int>(expr_v, op);
+        } else if(util::ConvAny<double>(expr_v)) {
+            result = evalUnaryWithAny<double>(expr_v, op);
+        } else {
+            string s = fmt::format("UnaryOpNode: Invalid unary operator {}", tk2Str(op));
             throw std::runtime_error(s);
-
         }
-        string s = fmt::format("UnaryOpNode: Invalid unary operator {}", tk2Str(op));
-        throw std::runtime_error(s);
+        node->setValue(result.value());
     }
     void visit_Expr(ASTNode* node) {
         // node 要么是Op要么是Data
