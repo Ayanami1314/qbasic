@@ -88,6 +88,8 @@ std::vector<Token> Tokenizer::read_line(const std::string &line) const {
                     tokens.push_back({tk_type, m[0].str()});
                 }
                 offset += m.length(0);
+                // int * a = nullptr;
+                // *a = 42; // trigger SIGSEGV, test backward lib
                 found = true;
                 break;
             }

@@ -6,7 +6,18 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_PREFIX_PATH "/home/ayanami/Qt/6.8.0/gcc_64")
+include(FetchContent)
+
+# Also requires one of: libbfd (gnu binutils), libdwarf, libdw (elfutils)
+FetchContent_Declare(backward
+        GIT_REPOSITORY https://github.com/bombela/backward-cpp
+        GIT_TAG master  # or a version tag, such as v1.6
+        SYSTEM          # optional, the Backward include directory will be treated as system directory
+)
+FetchContent_MakeAvailable(backward)
+
 
 
 find_package(Qt6 COMPONENTS
@@ -34,10 +45,13 @@ add_executable(qbasic main.cpp
         cmd_executor.h
 )
 target_link_libraries(qbasic
+        PUBLIC Backward::Interface
         Qt::Core
         Qt::Gui
         Qt::Widgets
         fmt::fmt-header-only
+        -lbfd
+        -ldl
 )
 
 add_executable(qbasic_test
@@ -63,9 +77,12 @@ add_test(
         COMMAND qbasic_test
 )
 target_link_libraries(qbasic_test
+        PUBLIC Backward::Interface
         Qt::Core
         Qt::Gui
         Qt::Widgets
         Qt::Test
         fmt::fmt-header-only
+        -lbfd
+        -ldl
 )
