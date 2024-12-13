@@ -43,6 +43,7 @@ add_executable(qbasic main.cpp
         mainwindow.ui
         cmd_executor.cpp
         cmd_executor.h
+        nameof.hpp
 )
 target_link_libraries(qbasic
         PUBLIC Backward::Interface
@@ -70,6 +71,7 @@ add_executable(qbasic_test
         interpreter.h
         cmd_executor.cpp
         cmd_executor.h
+        nameof.hpp
 )
 
 add_test(

@@ -33,23 +33,23 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnLoadCode, &QPushButton::clicked, this, &MainWindow::openFileDialog);
     connect(ui->btnRunCode, &QPushButton::clicked, [this](){
         // 此处必须解耦, 否则可能卡在input等,相当于分离的线程
-        sendCommand("RUN");
+        sendCommand(cmd2Str(Command::RUN));
         if(cmdExecutor->getMode() == ProgramMode::DEBUG) {
              showEnv();
         }
     });
     connect(ui->btnDebugResume, &QPushButton::clicked, [this](){
-        sendCommand("RESUME");
+        sendCommand(cmd2Str(Command::RESUME));
         if(cmdExecutor->getMode() == ProgramMode::DEBUG) {
             showEnv();
         }
     });
     connect(ui->btnDebugMode, &QPushButton::clicked, [this](){
-        sendCommand("DEBUG");
+        sendCommand(cmd2Str(Command::DEBUG));
         showEnv();
     });
     connect(ui->btnExitDebugMode, &QPushButton::clicked, [this](){
-        sendCommand("STOP");
+        sendCommand(cmd2Str(Command::STOP));
         showBreakpoints();
     });
     connect(this, &MainWindow::sendInput, cmdExecutor, &CmdExecutor::receiveInput);

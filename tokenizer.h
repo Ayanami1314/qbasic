@@ -12,6 +12,9 @@
 #include "util.h"
 #include <fmt/core.h>
 #include <set>
+
+#include "nameof.hpp"
+
 namespace Token {
 enum class TokenType {
     OP_GE,
@@ -54,12 +57,13 @@ enum class TokenType {
 static inline bool typeIn(TokenType tk, std::set<TokenType> tks) {
     return tks.find(tk) != tks.end();
 }
+
 inline std::string tk2Str(TokenType tk) {
     switch (tk) {
+        // not default names
     case TokenType::OP_GT: return ">";
     case TokenType::OP_ADD: return "+";
     case TokenType::IF: return "IF";
-    case TokenType::END: return "END";
     case TokenType::REM: return "REM(//)";
     case TokenType::OP_LT: return "<";
     case TokenType::OP_EQ: return "==";
@@ -70,22 +74,11 @@ inline std::string tk2Str(TokenType tk) {
     case TokenType::OP_SUB: return "-";
     case TokenType::OP_MUL: return "*";
     case TokenType::OP_DIV: return "/";
-    case TokenType::OP_MOD: return "MOD";
     case TokenType::ASSIGN: return "=";
-    case TokenType::LET: return "LET";
-    case TokenType::ELSE: return "ELSE";
-    case TokenType::THEN: return "THEN";
     case TokenType::LPAREN: return "(";
     case TokenType::RPAREN: return ")";
-    case TokenType::GOTO: return "GOTO";
-    case TokenType::PRINT: return "PRINT";
-    case TokenType::INPUT: return "INPUT";
-    case TokenType::VAR: return "VAR";
-    case TokenType::NUM: return "NUM";
-    case TokenType::LITERAL: return "LITERAL";
-    case TokenType::SPACE: return "SPACE";
     default:
-        return "UNKNOWN";
+        return std::string(NAMEOF_ENUM(tk));
     }
     throw std::runtime_error("tk2Str: Should not reach here");
 }

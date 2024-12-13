@@ -33,35 +33,38 @@ static bool isAnonymousProgramCmd(Command cmd) {
     return cmd == Command::LET || cmd == Command::PRINT || cmd == Command::INPUT;
 }
 static inline QString cmd2Str(Command cmd) {
-    switch (cmd) {
-    case Command::CHANGE_MODE:
-        return "CHANGE_MODE";
-    case Command::LOAD:
-        return "LOAD";
-    case Command::RUN:
-        return "RUN";
-    case Command::STOP:
-        return "STOP";
-    case Command::CLEAR:
-        return "CLEAR";
-    case Command::RESUME:
-        return "RESUME";
-    case Command::DEBUG:
-        return "DEBUG";
-    case Command::ADD_BREAKPOINT:
-        return "ADD_BREAKPOINT";
-    case Command::REMOVE_BREAKPOINT:
-        return "REMOVE_BREAKPOINT";
-    case Command::LET:
-        return "LET";
-    case Command::PRINT:
-        return "PRINT";
-    case Command::INPUT:
-        return "INPUT";
-    default:
-        return "UNKNOWN";
-    }
+    return QString::fromStdString(std::string(NAMEOF_ENUM(cmd)));
 }
+// static inline QString cmd2Str(Command cmd) {
+//     switch (cmd) {
+//     case Command::CHANGE_MODE:
+//         return "CHANGE_MODE";
+//     case Command::LOAD:
+//         return "LOAD";
+//     case Command::RUN:
+//         return "RUN";
+//     case Command::STOP:
+//         return "STOP";
+//     case Command::CLEAR:
+//         return "CLEAR";
+//     case Command::RESUME:
+//         return "RESUME";
+//     case Command::DEBUG:
+//         return "DEBUG";
+//     case Command::ADD_BREAKPOINT:
+//         return "ADD_BREAKPOINT";
+//     case Command::REMOVE_BREAKPOINT:
+//         return "REMOVE_BREAKPOINT";
+//     case Command::LET:
+//         return "LET";
+//     case Command::PRINT:
+//         return "PRINT";
+//     case Command::INPUT:
+//         return "INPUT";
+//     default:
+//         return "UNKNOWN";
+//     }
+// }
 static inline Command str2Cmd(const std::string& cmd) {
     if(cmd == "LOAD") {
         return Command::LOAD;

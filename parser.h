@@ -112,37 +112,40 @@ enum class ASTNodeType {
     NoOp,
 };
 inline string ast2Str(ASTNodeType type) {
-    switch (type) {
-    case ASTNodeType::BinOp:
-        return "BinOp";
-    case ASTNodeType::UnaryOp:
-        return "UnaryOp";
-        case ASTNodeType::AssignStmt:
-            return "=";
-        case ASTNodeType::Var:
-            return "var";
-        case ASTNodeType::Num:
-            return "num";
-        case ASTNodeType::String:
-            return "string";
-        case ASTNodeType::Data:
-            return "data";
-        case ASTNodeType::GOTOStmt:
-            return "GOTO";
-        case ASTNodeType::EndStmt:
-            return "END";
-        case ASTNodeType::PrintStmt:
-            return "PRINT";
-        case ASTNodeType::InputStmt:
-            return "INPUT";
-        case ASTNodeType::IFStmt:
-            return "IF";
-        case ASTNodeType::NoOp:
-            return "NoOp";
-        default:
-            throw std::runtime_error("ast2Str: Invalid ASTNodeType");
-    }
+    return std::string(NAMEOF_ENUM(type));
 }
+// inline string ast2Str(ASTNodeType type) {
+//     switch (type) {
+//     case ASTNodeType::BinOp:
+//         return "BinOp";
+//     case ASTNodeType::UnaryOp:
+//         return "UnaryOp";
+//         case ASTNodeType::AssignStmt:
+//             return "=";
+//         case ASTNodeType::Var:
+//             return "var";
+//         case ASTNodeType::Num:
+//             return "num";
+//         case ASTNodeType::String:
+//             return "string";
+//         case ASTNodeType::Data:
+//             return "data";
+//         case ASTNodeType::GOTOStmt:
+//             return "GOTO";
+//         case ASTNodeType::EndStmt:
+//             return "END";
+//         case ASTNodeType::PrintStmt:
+//             return "PRINT";
+//         case ASTNodeType::InputStmt:
+//             return "INPUT";
+//         case ASTNodeType::IFStmt:
+//             return "IF";
+//         case ASTNodeType::NoOp:
+//             return "NoOp";
+//         default:
+//             throw std::runtime_error("ast2Str: Invalid ASTNodeType");
+//     }
+// }
 class ASTNode {
     std::any value {};
 public:

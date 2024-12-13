@@ -5,7 +5,6 @@
 #include "util.h"
 #include <cassert>
 #include <optional>
-#include "message.h"
 #include <map>
 #include <fstream>
 #include <ranges>
