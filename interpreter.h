@@ -17,7 +17,6 @@ using fmt::format;
 using std::map;
 using std::unordered_map;
 
-
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 template<typename T>
@@ -344,6 +343,11 @@ public:
     void addLine(int line_no, string line) {
 
     }
+    std::shared_ptr<Env> copyEnv() {
+        SymbolTable table = env->symbol_table->copy();
+        std::shared_ptr<SymbolTable> new_table = std::make_shared<SymbolTable>(table);
+        return std::make_shared<Env>(new_table);
+    }
     void input(std::string var) {
         print("[DEBUG] input {}\n", var);
         if(status.mode == ProgramMode::DEV) {
@@ -388,6 +392,9 @@ public:
     [[nodiscard]] std::shared_ptr<Env> getEnv() const {
         return env;
     }
+    void setEnv(std::shared_ptr<Env> e) {
+        env = e;
+    }
     [[nodiscard]] ProgramStatus getStatus() const {
         return status;
     }
@@ -431,6 +438,14 @@ public:
             throw std::runtime_error("No file loaded");
         }
         loadFile(status.current_file, status.mode);
+    }
+    void reload(const std::vector<std::string>& lines) {
+        reset();
+        parser->reload(lines);
+    }
+    void reload(Token::BasicProgram p) {
+        reset();
+        parser->reload(std::move(p));
     }
     void switchMode(ProgramMode m) {
         // 如果是自测，那debug模式还是自测

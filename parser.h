@@ -50,7 +50,13 @@ public:
         }
         return std::any_cast<T>(it->second);
     }
-
+    SymbolTable copy() {
+        SymbolTable new_table;
+        for(const auto [key, value]: symbols) {
+            new_table.symbols[key] = value;
+        }
+        return new_table;
+    }
     bool contains(const string& key) const {
         return symbols.contains(key);
     }
@@ -658,6 +664,11 @@ public:
     void reload(const std::filesystem::path& path) {
         stmts.clear();
         tokenizer->reload(path);
+        this->parseProgram();
+    }
+    void reload(const std::vector<std::string>& lines) {
+        stmts.clear();
+        tokenizer->reload(lines);
         this->parseProgram();
     }
     void clear() {

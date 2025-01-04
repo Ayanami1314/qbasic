@@ -107,9 +107,11 @@ void Interpreter::interpret_SingleStep() {
     int origin_current = status.current_line;
     try {
         status.current_line = status.next_line;
-        visit(stmts[status.next_line]); // might change next_line
+        visit(stmts.at(status.next_line)); // might change next_line
         // astOutput(stmts[status.next_line]->toString());
-        auto strs = stmts[status.next_line]->toTabbedString();
+        // ATTETION: 可能在运行时被清除, 所以不能直接用stmts[status.next_line]
+        // at()会抛出异常
+        auto strs = stmts.at(status.next_line)->toTabbedString();
         for(const auto& s: strs) {
             astOutput(s);
         }

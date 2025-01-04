@@ -23,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(ui->btnClearCode, &QPushButton::clicked, this, [this](){
         clearAllDisplays();
+        cmdExecutor->runCmd(Command::STOP, {});
         cmdExecutor->runCmd(Command::CLEAR, {});
     });
     connect(this, &MainWindow::sendCommand, cmdExecutor, &CmdExecutor::receiveCmd);
@@ -33,6 +34,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnLoadCode, &QPushButton::clicked, this, &MainWindow::openFileDialog);
     connect(ui->btnRunCode, &QPushButton::clicked, [this](){
         // 此处必须解耦, 否则可能卡在input等,相当于分离的线程
+        auto text =  ui->CodeDisplay->toPlainText();
+        clearAllDisplays();
+        ui->CodeDisplay->setPlainText(text);
         sendCommand(cmd2Str(Command::RUN));
         if(cmdExecutor->getMode() == ProgramMode::DEBUG) {
              showEnv();
@@ -117,6 +121,7 @@ void MainWindow::saveFile() {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), "", tr("All Files (*)"));
     if (!fileName.isEmpty()) {
         saveFile(fileName);
+        cmdExecutor->runCmd(Command::LOAD, {fileName.toStdString()});
     }
 }
 MainWindow::~MainWindow()
@@ -137,6 +142,7 @@ void MainWindow::openFileDialog() {
             // ui->CodeDisplay->setPlainText(fileContent);
             // file.close();
             // MAKE DOC HAPPY
+            clearAllDisplays();
             cmdExecutor->runCmd(Command::LOAD, {fileName.toStdString()});
             auto sortedSrc = cmdExecutor->getInterpreter()->getSortedSrc();
             QString code;
@@ -203,8 +209,17 @@ void MainWindow::on_cmdLineEdit_editingFinished()
         if(!inserted) {
             lines.append(cmd);
         }
-        ui->CodeDisplay->setPlainText(lines.join("\n"));
+        // 插入也视为CMD
+        vector<std::string> new_lines;
+        for (const auto & line : lines) {
+            new_lines.push_back(line.toStdString());
+        }
+        bool success = cmdExecutor->reloadProgram(new_lines);
+        if(success) {
+            ui->CodeDisplay->setPlainText(lines.join("\n"));
+        }
         return;
+
     } catch (std::exception& e) {
 
     }

@@ -149,6 +149,7 @@ public slots:
     }
     void receiveInput(QString input) {
         interpreter->input(input.toStdString());
+        oneLineInterpreter->input(input.toStdString());
     }
     void chooseFile(std::string file) {
         choosed_file = file;
@@ -203,16 +204,43 @@ public:
     void handleAnonymousProgramCmd(std::string cmd) {
         auto parser = oneLineInterpreter->getParser();
         parser->clear();
-        oneLineInterpreter->resetStatusOnly();
+        auto old_env = oneLineInterpreter->copyEnv();
+        oneLineInterpreter->reset();
         auto tokenizer = parser->getTokenizer();
         tokenizer->read_anonymous_line(cmd);
         parser->parseProgram();
-        oneLineInterpreter->interpret();
+        oneLineInterpreter->setEnv(old_env);
         std::string repl = "\n";
         for(const auto& s: oneLineInterpreter->getEnv()->symbol_table->getRepl()) {
             repl += s + "\n";
         }
         print("[DEBUG] one line current env: {}", repl);
+        std::cout << fflush;
+        oneLineInterpreter->interpret();
+        repl = "\n";
+        for(const auto& s: oneLineInterpreter->getEnv()->symbol_table->getRepl()) {
+            repl += s + "\n";
+        }
+        print("[DEBUG] one line current env: {}", repl);
+        std::cout << fflush;
+    }
+    bool reloadProgram(const vector<std::string>& new_program_lines) {
+        print("[DEBUG] Reloaded program\n");
+        bool success = true;
+        auto old_program = tokenizer->get_program();
+        try {
+            interpreter->reload(new_program_lines);
+        } catch (std::exception& e) {
+            success = false;
+            // 异步提示
+            interpreter->reload(old_program);
+            emit sendError(QString::fromStdString(e.what()));
+            print("Failed to reload program: {}\n", e.what());
+        }
+        return success;
+    }
+    [[nodiscard]] std::shared_ptr<Parser> getParser() const {
+        return parser;
     }
     [[nodiscard]] std::shared_ptr<Env> getEnv() const {
         return env;

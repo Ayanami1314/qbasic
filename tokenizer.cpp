@@ -119,7 +119,10 @@ void Tokenizer::tokenize(BasicProgram&& program) {
     this->token_lines = res;
     this->src_program = program;
 }
-
+void Tokenizer::tokenize(const std::vector<std::string>& lines) {
+    auto program = programFromlines(lines);
+    this->tokenize(std::move(program));
+}
 void Tokenizer::tokenize(const std::filesystem::path& file_path) {
     std::ifstream ifs(file_path);
     if(!ifs.is_open()) {

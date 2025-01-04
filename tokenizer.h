@@ -255,6 +255,7 @@ public:
     ~Tokenizer() = default;
     void tokenize(BasicProgram&& program);
     void tokenize(const std::filesystem::path& file_path);
+    void tokenize(const std::vector<std::string>& lines);
     void read_anonymous_line(const std::string& line);
     void resetOff() {
         line_offset = 0;
@@ -268,6 +269,10 @@ public:
         resetAll();
         tokenize(p);
     }
+    void reload(const std::vector<std::string>& lines) {
+        resetAll();
+        tokenize(lines);
+    }
     void reload(BasicProgram&& p) {
         resetAll();
         tokenize(std::move(p));
@@ -276,6 +281,7 @@ public:
     [[nodiscard]] std::vector<TokenLine> read_lines(const std::vector<std::string>& lines);
     [[nodiscard]] auto get_token_lines() const { return token_lines; }
     [[nodiscard]] auto get_single_line() const { return token_lines[line_offset]; }
+    [[nodiscard]] auto get_program() const { return src_program; }
     [[nodiscard]] Token peek() const;
     [[nodiscard]] Token prev() const;
     [[nodiscard]] BasicProgram getSortedSrc() const { return src_program; }
